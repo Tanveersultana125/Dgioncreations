@@ -1,4 +1,8 @@
-/* Font families are loaded in index.html — single source of truth. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
 
 /* The Seasons — full TTF files in /public/fonts/the-seasons/.
    No demo watermark — hyphens, apostrophes, all special chars render normally. */
@@ -55,9 +59,6 @@
   --site-body: "Inter", system-ui, sans-serif;
 }
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 
 /* ─── PROFESSIONAL TYPE SYSTEM ────────────────────────────────────────────
    Single source of truth for typography across the whole site.
@@ -106,33 +107,33 @@ p {
 /* All headings — The Seasons display, consistent rhythm */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--site-display);
-  font-weight: 600 !important;
+  font-weight: 600;
   letter-spacing: 0.005em;
   word-spacing: normal;
-  line-height: 1.25 !important;
+  line-height: 1.25;
   margin: 0;
 }
 
 /* Type scale — fluid sizes that look good on every viewport */
 h1 {
-  font-size: clamp(2.5rem, 6vw, 4.5rem) !important;  /* hero titles ~40–72px */
-  line-height: 1.1 !important;
+  font-size: clamp(2.5rem, 6vw, 4.5rem);  /* hero titles ~40–72px */
+  line-height: 1.1;
 }
 h2 {
-  font-size: clamp(2rem, 5vw, 3.25rem) !important;   /* section titles ~32–52px */
-  line-height: 1.15 !important;
+  font-size: clamp(2rem, 5vw, 3.25rem);   /* section titles ~32–52px */
+  line-height: 1.15;
 }
 h3 {
-  font-size: clamp(1.5rem, 2.5vw, 2.125rem) !important; /* sub-section ~24–34px */
+  font-size: clamp(1.5rem, 2.5vw, 2.125rem); /* sub-section ~24–34px */
 }
 h4 {
-  font-size: clamp(1.25rem, 2vw, 1.5rem) !important;    /* card titles ~20–24px */
+  font-size: clamp(1.25rem, 2vw, 1.5rem);    /* card titles ~20–24px */
 }
 h5 {
-  font-size: clamp(1.125rem, 1.5vw, 1.25rem) !important;/* small headings ~18–20px */
+  font-size: clamp(1.125rem, 1.5vw, 1.25rem);/* small headings ~18–20px */
 }
 h6 {
-  font-size: 1rem !important;                           /* mini headings ~16px */
+  font-size: 1rem;                           /* mini headings ~16px */
 }
 
 /* Buttons / CTAs — clean, confident */

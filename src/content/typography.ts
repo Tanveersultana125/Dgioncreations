@@ -146,8 +146,15 @@ export function textStyleToCss(style?: TextStyle, fallback: TextStyle = defaultT
     SITE_DISPLAY_FONT && s.fontSize >= DISPLAY_FONT_THRESHOLD
       ? SITE_DISPLAY_FONT
       : s.fontFamily;
+      
+  // For mobile responsiveness: text smaller than 20px stays fixed.
+  // Larger text uses clamp() to scale down on small viewports.
+  const fontSize = s.fontSize <= 20 
+    ? `${s.fontSize}px` 
+    : `clamp(${Math.max(16, s.fontSize * 0.45)}px, ${s.fontSize * 0.08}vw + ${s.fontSize * 0.25}px, ${s.fontSize}px)`;
+
   return {
-    fontSize: `${s.fontSize}px`,
+    fontSize,
     fontFamily: FONT_FAMILIES[familyKey]?.stack ?? FONT_FAMILIES.inter.stack,
     fontWeight: s.bold ? 700 : 400,
     fontStyle: s.italic ? "italic" : "normal",

@@ -136,12 +136,12 @@ export default function IndustriesSection() {
           </h2>
         </motion.div>
 
-        {/* 2-column: globe + accordion */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1.25fr_1fr] gap-6 sm:gap-8 xl:gap-12 items-center">
+        {/* 2-column: globe + accordion — vertical on mobile, grid on desktop */}
+        <div className="flex flex-col lg:grid lg:grid-cols-[1.25fr_1fr] gap-10 sm:gap-14 lg:gap-12 items-center">
 
           {/* ── LEFT — globe with parallax ── */}
           <motion.div
-            className="flex justify-start lg:pl-4"
+            className="w-full flex justify-center lg:justify-start lg:pl-4"
             initial={{ opacity: 0, x: -40 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
@@ -149,16 +149,16 @@ export default function IndustriesSection() {
             style={{ x: springX, y: springY }}
           >
             <div
-              className="relative w-full max-w-none"
+              className="relative w-full max-w-none flex justify-center"
               style={{ overflow: "visible" }}
             >
               <Globe activeIndex={active} onMarkerClick={handleMarkerClick} />
             </div>
           </motion.div>
 
-          {/* ── RIGHT — accordion ── */}
+          {/* ── RIGHT — accordion — Aggressive Centering with Strong Right Nudge ── */}
           <motion.div
-            className="flex flex-col gap-3 sm:gap-4 lg:gap-5 lg:pl-12 xl:pl-20"
+            className="w-full flex flex-col gap-4 items-center justify-center lg:items-stretch lg:pl-12 xl:pl-20 pl-10 sm:pl-0 pr-0"
             initial={{ opacity: 0, x: 40 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
@@ -175,8 +175,9 @@ export default function IndustriesSection() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.55, ease, delay: i * 0.08 }}
+                  className="w-full flex flex-col items-center justify-center mx-auto"
                 >
-                  <CardContainer className="w-full py-0" containerClassName="w-full py-0">
+                  <CardContainer className="w-[85%] sm:w-full max-w-[420px] sm:max-w-none py-0 mx-auto" containerClassName="w-full flex justify-center items-center">
                     <CardBody className="w-full">
                       <GlassSurface
                         borderRadius={24}
@@ -224,11 +225,11 @@ export default function IndustriesSection() {
                         )}
 
                         {/* header row */}
-                        <div className="flex items-center gap-4 sm:gap-6 px-5 sm:px-7 lg:px-9 py-5 sm:py-6 lg:py-7">
+                        <div className="flex items-center gap-4 sm:gap-6 px-4 sm:px-7 lg:px-9 py-4 sm:py-6 lg:py-7">
                           {/* icon */}
                           <CardItem translateZ={50}>
                             <div
-                              className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 transition-all duration-400"
+                              className="w-12 h-12 md:w-14 md:h-14 rounded-xl flex items-center justify-center shrink-0 transition-all duration-400"
                               style={{
                                 background: isActive ? `${ind.accent}22` : "rgba(255,255,255,0.06)",
                                 border: `1px solid ${isActive ? ind.accent + "55" : "rgba(255,255,255,0.1)"}`,
@@ -236,7 +237,7 @@ export default function IndustriesSection() {
                               }}
                             >
                               <Icon
-                                className="w-6 h-6"
+                                className="w-5 h-5 md:w-6 md:h-6"
                                 style={{ color: isActive ? ind.accent : "rgba(255,255,255,0.5)" }}
                               />
                             </div>

@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { motion, useInView } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button, type ButtonProps } from '@/components/ui/button';
 import { StatCounter } from "@/components/ui/StatCounter";
@@ -47,35 +48,53 @@ const AnimatedFeatureSpotlight = React.forwardRef<HTMLElement, AnimatedFeatureSp
     const cardRef = React.useRef<HTMLDivElement>(null);
     const [tilt, setTilt] = React.useState({ rx: 0, ry: 0, shine: { x: '50%', y: '50%' } });
 
-    const handleMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const handleMove = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
       const rect = cardRef.current?.getBoundingClientRect();
       if (!rect) return;
-      const cx = (e.clientX - rect.left - rect.width / 2) / rect.width;
-      const cy = (e.clientY - rect.top - rect.height / 2) / rect.height;
+      
+      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+
+      const cx = (clientX - rect.left - rect.width / 2) / rect.width;
+      const cy = (clientY - rect.top - rect.height / 2) / rect.height;
       setTilt({
         rx: -cy * 18,
         ry: cx * 18,
         shine: {
-          x: `${((e.clientX - rect.left) / rect.width) * 100}%`,
-          y: `${((e.clientY - rect.top) / rect.height) * 100}%`,
+          x: `${((clientX - rect.left) / rect.width) * 100}%`,
+          y: `${((clientY - rect.top) / rect.height) * 100}%`,
         },
       });
     };
     const handleLeave = () => setTilt({ rx: 0, ry: 0, shine: { x: '50%', y: '50%' } });
+
+    // Google-level Senior UI/UX Fix: Passive activation on scroll for mobile parity
+    const isInView = useInView(cardRef, { margin: "-20%", once: false });
+    React.useEffect(() => {
+      const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+      if (isMobile && isInView) {
+        setTilt({ rx: -2, ry: 2, shine: { x: '40%', y: '40%' } });
+        const t = setTimeout(() => handleLeave(), 800);
+        return () => clearTimeout(t);
+      }
+    }, [isInView]);
 
     return (
       <section
         ref={ref}
         className={cn('w-full max-w-6xl mx-auto', className)}
         aria-labelledby="feature-spotlight-heading"
-        style={{ perspective: '1400px' }}
+        style={{ perspective: '1400px', touchAction: 'pan-y' }} // Allow vertical scroll but capture horizontal for tilt
         {...props}
       >
         <div
           ref={cardRef}
           onMouseMove={handleMove}
           onMouseLeave={handleLeave}
-          className="relative p-8 md:p-12 rounded-2xl overflow-hidden transition-transform duration-200 ease-out"
+          onTouchStart={handleMove}
+          onTouchMove={handleMove}
+          onTouchEnd={handleLeave}
+          className="relative p-5 sm:p-8 md:p-12 rounded-2xl overflow-hidden transition-transform duration-200 ease-out"
           style={{
             transform: `rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)`,
             transformStyle: 'preserve-3d',
@@ -133,8 +152,12 @@ const AnimatedFeatureSpotlight = React.forwardRef<HTMLElement, AnimatedFeatureSp
               {/* heading — Z:55 */}
               <h2
                 id="feature-spotlight-heading"
-                className="tracking-tight text-foreground animate-in fade-in slide-in-from-top-4 duration-700 delay-150"
-                style={{ transform: 'translateZ(55px)', ...headingStyle }}
+                className="tracking-tight text-foreground animate-in fade-in slide-in-from-top-4 duration-700 delay-150 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold px-4 sm:px-0"
+                style={{ 
+                  transform: 'translateZ(55px)', 
+                  ...headingStyle,
+                  fontSize: undefined // Allow Tailwind classes to handle responsiveness if style doesn't explicitly override it with a fixed px
+                }}
               >
                 {heading}
               </h2>
@@ -178,7 +201,7 @@ const AnimatedFeatureSpotlight = React.forwardRef<HTMLElement, AnimatedFeatureSp
 
             {/* right image — 3D pop-out with stacked depth cards */}
             <div
-              className="relative w-full min-h-[280px] md:min-h-[360px] flex items-center justify-center animate-in fade-in zoom-in-95 duration-700 delay-200"
+              className="relative w-full aspect-[4/3] md:aspect-auto md:min-h-[360px] flex items-center justify-center animate-in fade-in zoom-in-95 duration-700 delay-200"
               style={{ transform: 'translateZ(80px)', transformStyle: 'preserve-3d' }}
             >
 
@@ -193,8 +216,8 @@ const AnimatedFeatureSpotlight = React.forwardRef<HTMLElement, AnimatedFeatureSp
                 <img
                   src={imageUrl}
                   alt={imageAlt}
-                  className="w-full h-full object-cover animate-float"
-                  style={{ filter: 'brightness(0.85) saturate(0.9)', minHeight: 300 }}
+                  className="w-full h-full object-cover object-center animate-float"
+                  style={{ filter: 'brightness(0.85) saturate(0.9)' }}
                 />
                 {/* purple tint */}
                 <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, rgba(131,127,251,0.12) 0%, transparent 60%)' }} />

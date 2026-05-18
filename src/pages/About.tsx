@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { motion, animate, useInView } from "framer-motion";
+import { motion, animate, useInView, useScroll, useSpring, useTransform, useMotionValueEvent } from "framer-motion";
 import {
   Sparkles, Target, Heart, Rocket, ArrowUpRight, Linkedin, Twitter, Github, ChevronRight
 } from "lucide-react";
@@ -115,11 +115,39 @@ export default function About() {
     <div className="min-h-screen bg-background text-white overflow-x-hidden selection:bg-[#837FFB]/30">
       <Navbar />
 
-      {/* Background Texture & Glows */}
-      <div className="fixed inset-0 pointer-events-none z-0">
+      {/* Background Atmosphere & High-End Glows */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         <div className="absolute inset-0 opacity-[0.03] contrast-150 brightness-100" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3仿真%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} />
-        <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full opacity-15 blur-[120px] bg-[#837FFB]" />
-        <div className="absolute bottom-[20%] right-[-5%] w-[40%] h-[40%] rounded-full opacity-10 blur-[100px] bg-[#5B57F5]" />
+        
+        {/* Animated Digital Dust Particles */}
+        <div className="absolute inset-0">
+          {[...Array(20)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-1 h-1 bg-[#837FFB]/40 rounded-full"
+              initial={{ 
+                x: Math.random() * 100 + "%", 
+                y: Math.random() * 100 + "%",
+                opacity: Math.random() * 0.5 
+              }}
+              animate={{ 
+                y: ["-10%", "110%"],
+                opacity: [0, 0.5, 0]
+              }}
+              transition={{ 
+                duration: 10 + Math.random() * 20, 
+                repeat: Infinity, 
+                ease: "linear",
+                delay: Math.random() * 10
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Deep Radiant Glows */}
+        <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full opacity-20 blur-[120px] bg-[#837FFB] animate-pulse" style={{ animationDuration: '8s' }} />
+        <div className="absolute bottom-[20%] right-[-5%] w-[40%] h-[40%] rounded-full opacity-15 blur-[100px] bg-[#5B57F5]" />
+        <div className="absolute top-[40%] right-[10%] w-32 h-32 bg-[#837FFB]/20 blur-[60px] rounded-full" />
       </div>
 
       {/* HERO */}
@@ -294,69 +322,108 @@ export default function About() {
 
 function TimelineWithGlider({ milestones, titleStyle, descStyle }: { milestones: any[], titleStyle?: any, descStyle?: any }) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  // High-performance scroll tracking for 100% mobile reliability
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start center", "end center"]
+  });
+
+  // Buttery smooth mapping for the light trail
+  const smoothProgress = useSpring(scrollYProgress, { stiffness: 100, damping: 30, restDelta: 0.001 });
+  const gliderTop = useTransform(smoothProgress, [0, 1], ["0%", "92%"]);
+
+  // Sync activeIndex with scroll progress for text highlights
+  useMotionValueEvent(scrollYProgress, "change", (latest) => {
+    const index = Math.min(
+      Math.floor(latest * milestones.length + 0.2), // Offset slightly to trigger earlier
+      milestones.length - 1
+    );
+    if (index !== activeIndex) setActiveIndex(index);
+  });
 
   return (
-    <div className="relative">
+    <div ref={containerRef} className="relative px-2">
       {/* Vertical Track */}
-      <div className="absolute left-[23px] top-6 bottom-6 w-px bg-white/5 overflow-visible">
-        {/* Animated Glider */}
-        <div 
-          className="absolute left-0 w-full bg-gradient-to-b from-transparent via-[#837FFB] to-transparent transition-all duration-700 ease-[cubic-bezier(0.37,1.95,0.66,0.56)]"
-          style={{ 
-            height: `${100 / milestones.length}%`,
-            top: `${(activeIndex * 100) / milestones.length}%`
-          }}
+      <div className="absolute left-[23px] top-6 bottom-12 w-[2px] bg-white/[0.05] overflow-visible">
+        {/* Radiant High-End Glider */}
+        <motion.div 
+          style={{ top: gliderTop }}
+          className="absolute left-[-4px] w-[10px] h-[40px] z-30"
         >
-          {/* Outer Glow */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[120%] w-[400%] bg-[#837FFB]/30 blur-[20px] rounded-full" />
-          {/* Pulse Dot */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-[#837FFB] shadow-[0_0_15px_#837FFB]" />
-        </div>
+          {/* Glowing Head */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-white shadow-[0_0_20px_#fff,0_0_40px_#837FFB] z-10" />
+          {/* Light Trail */}
+          <div className="absolute top-2 left-1/2 -translate-x-1/2 w-[4px] h-full bg-gradient-to-b from-[#837FFB] to-transparent opacity-60" />
+          {/* Aura */}
+          <div className="absolute top-[-10px] left-[-15px] w-12 h-12 bg-[#837FFB]/30 blur-[15px] rounded-full" />
+        </motion.div>
       </div>
 
       {/* Milestone Items */}
       {milestones.map((m, i) => (
-        <div 
+        <motion.div 
           key={i} 
           className="relative flex items-start gap-10 pb-20 last:pb-0 cursor-pointer group"
-          onMouseEnter={() => setActiveIndex(i)}
           onClick={() => setActiveIndex(i)}
+          initial={false}
+          animate={{ opacity: activeIndex === i ? 1 : 0.3 }}
         >
           {/* Year Circle */}
           <div 
-            className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 text-sm font-bold relative z-10 transition-all duration-500 ${
+            className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 text-sm font-bold relative z-10 transition-all duration-700 ${
               activeIndex === i 
                 ? "text-white scale-110" 
-                : "text-white/30 scale-90"
+                : "text-white/20 scale-90"
             }`}
             style={{ 
-              background: activeIndex === i ? "linear-gradient(135deg, #837FFB, #5B57F5)" : "rgba(255,255,255,0.05)",
-              boxShadow: activeIndex === i ? "0 0 30px rgba(131,127,251,0.6)" : "none",
-              border: activeIndex === i ? "none" : "1px solid rgba(255,255,255,0.1)"
+              background: activeIndex === i ? "linear-gradient(135deg, #837FFB, #5B57F5)" : "rgba(255,255,255,0.03)",
+              boxShadow: activeIndex === i ? "0 0 40px rgba(131,127,251,0.5)" : "none",
+              border: activeIndex === i ? "none" : "1px solid rgba(255,255,255,0.05)"
             }}
           >
             {m.year.slice(-2)}
           </div>
 
-          {/* Content */}
-          <div className={`pt-1 transition-all duration-500 ${activeIndex === i ? "translate-x-2" : "translate-x-0"} flex-1`}>
-            <div className={`text-[10px] font-bold tracking-[0.3em] uppercase mb-2 transition-colors duration-500 ${activeIndex === i ? "text-[#837FFB]" : "text-white/20"}`}>
+          {/* Content — With 3D Parallax Tilt */}
+          <motion.div 
+            className="pt-1 flex-1 transition-all duration-700"
+            animate={{ 
+              translateX: activeIndex === i ? 16 : 0,
+              rotateX: activeIndex === i ? 0 : -10,
+              scale: activeIndex === i ? 1.02 : 1
+            }}
+            style={{ perspective: 1000 }}
+          >
+            <div className={`text-[10px] font-black tracking-[0.4em] uppercase mb-3 transition-colors duration-700 ${activeIndex === i ? "text-[#837FFB]" : "text-white/20"}`}>
               {m.year}
             </div>
             <h3 
-              className={`font-bold italic tracking-tight transition-colors duration-500 ${activeIndex === i ? "text-white" : "text-white/30"}`}
+              className={`text-2xl font-bold italic tracking-tight transition-colors duration-700 ${activeIndex === i ? "text-white" : "text-white/30"}`}
               style={textStyleToCss(m.titleStyle || titleStyle)}
             >
               {m.title}
             </h3>
             <p 
-              className={`leading-relaxed max-w-2xl transition-colors duration-500 mb-6 ${activeIndex === i ? "text-white/60" : "text-white/10"}`}
+              className={`leading-relaxed max-w-2xl transition-all duration-700 mt-4 ${activeIndex === i ? "text-white/60" : "text-white/10"}`}
               style={textStyleToCss(m.descStyle || descStyle)}
             >
               {m.desc}
             </p>
-          </div>
-        </div>
+            
+            {/* Liquid Glow Overlay */}
+            {activeIndex === i && (
+              <motion.div 
+                layoutId="liquid-glow"
+                className="absolute -inset-10 bg-[#837FFB]/5 blur-[60px] rounded-full pointer-events-none z-[-1]"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              />
+            )}
+          </motion.div>
+        </motion.div>
       ))}
     </div>
   );

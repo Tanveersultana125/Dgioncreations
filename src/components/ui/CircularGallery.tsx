@@ -49,7 +49,7 @@ function wrapText(context, text, x, y, maxWidth, lineHeight) {
   }
 }
 
-function createTextTexture(gl, text, summary = '', font = 'bold 42px Figtree', color = 'white') {
+function createTextTexture(gl, text, summary = '', font = 'bold 42px Figtree', color = 'white', isMobile = false) {
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('2d');
   if (!context) return { texture: new Texture(gl), width: 1, height: 1 };
@@ -66,24 +66,27 @@ function createTextTexture(gl, text, summary = '', font = 'bold 42px Figtree', c
   context.fillRect(0, canvas.height * 0.3, canvas.width, canvas.height);
   
   // 2. Main Title - Near Bottom
-  context.font = font;
+  // ULTRA-MINI for mobile parity - 8px is the absolute limit for professional elegance
+  const isActuallyMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+  const titleFontSize = isActuallyMobile ? 'bold 8px Figtree' : font;
+  context.font = titleFontSize;
   context.fillStyle = color;
   context.textBaseline = 'middle';
   context.textAlign = 'center';
   context.shadowColor = 'rgba(0,0,0,0.5)';
   context.shadowBlur = 10;
-  context.fillText(text.toUpperCase(), canvas.width / 2, canvas.height - 150);
+  context.fillText(text.toUpperCase(), canvas.width / 2, canvas.height - (isActuallyMobile ? 60 : 150));
   
   // 3. Explore Button Pill - Bottom Center
-  const btnWidth = 180;
-  const btnHeight = 54;
+  const btnWidth = isActuallyMobile ? 40 : 180;
+  const btnHeight = isActuallyMobile ? 12 : 54;
   const btnX = (canvas.width - btnWidth) / 2;
-  const btnY = canvas.height - 90;
+  const btnY = canvas.height - (isActuallyMobile ? 50 : 90);
   
   context.shadowBlur = 0;
   context.fillStyle = '#837FFB';
   
-  const r = 27;
+  const r = isActuallyMobile ? 4 : 27;
   context.beginPath();
   context.moveTo(btnX + r, btnY);
   context.lineTo(btnX + btnWidth - r, btnY);
@@ -97,10 +100,10 @@ function createTextTexture(gl, text, summary = '', font = 'bold 42px Figtree', c
   context.closePath();
   context.fill();
   
-  context.font = '900 15px Inter, sans-serif';
+  context.font = isMobile ? '900 8px Inter, sans-serif' : '900 15px Inter, sans-serif';
   context.fillStyle = 'white';
-  context.letterSpacing = '1px';
-  context.fillText('EXPLORE SECTOR', canvas.width / 2, btnY + btnHeight / 2 + 2);
+  context.letterSpacing = isMobile ? '0.2px' : '1px';
+  context.fillText('EXPLORE', canvas.width / 2, btnY + btnHeight / 2 + 1);
 
   const texture = new Texture(gl, { generateMipmaps: false });
   texture.image = canvas;
@@ -108,7 +111,7 @@ function createTextTexture(gl, text, summary = '', font = 'bold 42px Figtree', c
 }
 
 class Title {
-  constructor({ gl, plane, renderer, text, summary = '', textColor = '#ffffff', font = 'bold 30px Figtree' }) {
+  constructor({ gl, plane, renderer, text, summary = '', textColor = '#ffffff', font = 'bold 30px Figtree', isMobile = false }) {
     autoBind(this);
     this.gl = gl;
     this.plane = plane;
@@ -117,10 +120,11 @@ class Title {
     this.summary = summary;
     this.textColor = textColor;
     this.font = font;
+    this.isMobile = isMobile;
     this.createMesh();
   }
   createMesh() {
-    const { texture, width, height } = createTextTexture(this.gl, this.text, this.summary, this.font, this.textColor);
+    const { texture, width, height } = createTextTexture(this.gl, this.text, this.summary, this.font, this.textColor, this.isMobile);
     const geometry = new Plane(this.gl);
     const program = new Program(this.gl, {
       vertex: `
@@ -157,6 +161,12 @@ class Title {
     this.mesh.position.y = 0; // Centered overlay
     this.mesh.position.z = 0.05;
     this.mesh.setParent(this.plane);
+  }
+  destroy() {
+    if (this.mesh) {
+      if (this.mesh.program) this.mesh.program.remove();
+      this.mesh.setParent(null);
+    }
   }
 }
 
@@ -293,7 +303,8 @@ class Media {
       text: this.text,
       summary: this.summary,
       textColor: this.textColor,
-      font: this.font
+      font: this.font,
+      isMobile: this.screen.width < 768
     });
   }
   update(scroll, direction) {
@@ -346,13 +357,19 @@ class Media {
       }
     }
     
-    // Taller cards but slightly reduced for safe fit
-    const cardHeightPercent = this.screen.width < 768 ? 0.36 : 0.43; 
+    const isMobile = this.screen.width < 1024;
+    const cardHeightPercent = isMobile ? 0.1 : 0.43; 
     this.plane.scale.y = this.viewport.height * cardHeightPercent;
-    this.plane.scale.x = this.plane.scale.y * 0.65; // Taller aspect ratio
+    this.plane.scale.x = this.plane.scale.y * (isMobile ? 0.5 : 0.7); 
     
     this.plane.program.uniforms.uPlaneSizes.value = [this.plane.scale.x, this.plane.scale.y];
-    this.padding = 1.5; // Slightly less padding
+    this.padding = isMobile ? 0.8 : 1.5; 
+
+    // Re-create title on resize if mobile status changes
+    if (this.title) {
+       this.title.destroy();
+       this.createTitle();
+    }
     this.width = this.plane.scale.x + this.padding;
     this.widthTotal = this.width * this.length;
     this.x = this.width * this.index;

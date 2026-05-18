@@ -55,8 +55,8 @@ export default function HeroSection() {
       <div className="relative z-10 flex flex-col lg:flex-row w-full min-h-screen">
 
         {/* ── Left: Text ────────────────────────────────────────────── */}
-        <div className="w-full lg:w-[48%] xl:w-[44%] flex flex-col justify-center items-center lg:items-start text-center lg:text-left
-                        pt-24 sm:pt-32 md:pt-44 lg:pt-32 pb-12 sm:pb-16 px-5 sm:px-8 md:px-14 lg:pl-20 lg:pr-12
+        <div className="w-full lg:w-[48%] xl:w-[44%] flex flex-col justify-start lg:justify-center items-center lg:items-start text-center lg:text-left
+                        pt-28 sm:pt-32 md:pt-44 lg:pt-32 pb-12 sm:pb-16 px-5 sm:px-8 md:px-14 lg:pl-20 lg:pr-12
                         shrink-0 relative z-10">
 
           <div
@@ -70,29 +70,29 @@ export default function HeroSection() {
 
           <h1
             ref={headlineRef}
-            className="leading-[1.1] mb-6 opacity-0"
+            className="flex flex-col !flex-col !gap-4 leading-relaxed mb-6 opacity-0"
             style={textStyleToCss(content.headlineStyle, DEFAULT_HEADLINE_STYLE)}
           >
             {content.headlineTop.includes("**") ? (
               content.headlineTop.split("\n").map((line, i) => (
-                <span key={i} className="block">
+                <div key={i} className="block !block leading-[1.4] lg:leading-[1.1] min-h-fit">
                   <MarkupText
                     text={line}
                     highlightStyle={content.highlightStyle}
                     highlightClassName="drop-shadow-[0_0_36px_rgba(131,127,251,0.7)]"
                   />
-                </span>
+                </div>
               ))
             ) : (
               <>
-                {content.headlineTop}
-                <span
-                  className="block leading-[0.95] my-2 drop-shadow-[0_0_36px_rgba(131,127,251,0.7)]"
+                <div className="block !block leading-[1.4] lg:leading-[1.1] min-h-fit">{content.headlineTop}</div>
+                <div
+                  className="block !block leading-[1.4] lg:leading-[0.95] my-2 lg:my-2 drop-shadow-[0_0_36px_rgba(131,127,251,0.7)] min-h-fit"
                   style={textStyleToCss(content.highlightStyle, DEFAULT_HIGHLIGHT_STYLE)}
                 >
                   {content.headlineHighlight}
-                </span>
-                {content.headlineBottom}
+                </div>
+                <div className="block !block leading-[1.4] lg:leading-[1.1] min-h-fit">{content.headlineBottom}</div>
               </>
             )}
           </h1>
@@ -164,7 +164,6 @@ export default function HeroSection() {
 
           <div className="absolute top-0 bottom-0 left-0 w-16 bg-gradient-to-r from-[#0A0818] to-transparent pointer-events-none z-10" />
           <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-[#0A0818] to-transparent pointer-events-none z-10" />
-          <div className="absolute top-0 left-0 right-0 h-28 bg-gradient-to-b from-[#0A0818] to-transparent pointer-events-none z-10" />
         </div>
       </div>
 

@@ -58,11 +58,13 @@ function ServiceCardItem({
       `radial-gradient(circle at ${x}% ${y}%, rgba(255,255,255,0.18) 0%, transparent 55%)`
   );
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
     const rect = cardRef.current?.getBoundingClientRect();
     if (!rect) return;
-    mx.set((e.clientX - rect.left) / rect.width);
-    my.set((e.clientY - rect.top) / rect.height);
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    mx.set((clientX - rect.left) / rect.width);
+    my.set((clientY - rect.top) / rect.height);
   };
 
   const handleMouseLeave = () => {
@@ -87,10 +89,14 @@ function ServiceCardItem({
         rotateX: isHovered ? rotateX : 0,
         rotateY: isHovered ? rotateY : 0,
         transition: "flex 0.5s cubic-bezier(0.25,0.46,0.45,0.94)",
+        touchAction: "pan-y"
       }}
       onMouseEnter={onEnter}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
+      onTouchStart={(e) => { onEnter(); handleMouseMove(e); }}
+      onTouchMove={handleMouseMove}
+      onTouchEnd={handleMouseLeave}
       onClick={onClick}
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
@@ -269,56 +275,116 @@ export default function ServicesSection() {
           ))}
         </div>
 
-        {/* ── mobile vertical stack — touch-first cards with full label & icon visible ── */}
-        <div className="md:hidden flex flex-col gap-3 sm:gap-4">
+        {/* ── mobile vertical stack — premium cards with images, matching laptop aesthetic ── */}
+        <div className="md:hidden flex flex-col gap-4">
           {servicesData.map((svc, i) => {
             const Icon = resolveIcon(svc.iconKey);
+            const isActive = hoveredId === svc.id;
+            const src = svc.imageUrl || svc.iconImageUrl || `https://picsum.photos/seed/${svc.id}/800/600`;
+            
             return (
-              <motion.button
+              <motion.div
                 key={svc.id}
-                onClick={() => navigate(`/service/${svc.id}`)}
-                initial={{ opacity: 0, y: 16 }}
+                onClick={() => {
+                  if (isActive) navigate(`/service/${svc.id}`);
+                  else setHoveredId(svc.id);
+                }}
+                initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-50px" }}
-                transition={{ duration: 0.45, delay: i * 0.04, ease }}
-                className="group relative w-full text-left rounded-2xl overflow-hidden p-5 flex items-center gap-4 active:scale-[0.98] transition-transform"
+                transition={{ duration: 0.5, delay: i * 0.05, ease }}
+                className="group relative w-full rounded-2xl overflow-hidden cursor-pointer"
                 style={{
-                  background:
-                    "linear-gradient(145deg, rgba(131,127,251,0.12) 0%, rgba(15,12,40,0.95) 100%)",
-                  border: "1px solid rgba(131,127,251,0.25)",
-                  boxShadow: "0 16px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.08)",
+                  height: isActive ? "220px" : "100px",
+                  transition: "height 0.4s cubic-bezier(0.25,0.46,0.45,0.94)",
+                  transformStyle: "preserve-3d",
+                  perspective: "1000px"
                 }}
               >
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
-                  style={{
-                    background: "rgba(131,127,251,0.15)",
-                    border: "1px solid rgba(131,127,251,0.3)",
+                {/* Background Image */}
+                <img
+                  src={src}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover transition-all duration-700"
+                  style={{ 
+                    opacity: isActive ? 0.6 : 0.15,
+                    filter: isActive ? "grayscale(0%)" : "grayscale(100%)",
+                    transform: isActive ? "scale(1.05)" : "scale(1)"
                   }}
-                >
-                  <Icon className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[#837FFB]/40 text-[10px] font-bold tracking-widest">
-                      {String(i + 1).padStart(2, "0")}
-                    </span>
-                    <h3
-                      className="uppercase tracking-wide leading-tight text-sm font-bold truncate"
-                      style={textStyleToCss(data.serviceCardTitleStyle, DEFAULT_SERVICE_CARD_TITLE_STYLE)}
+                />
+                
+                {/* Overlays */}
+                <div className="absolute inset-0 bg-gradient-to-br from-[#0B0F2A]/90 via-[#0B0F2A]/40 to-transparent" />
+                <div 
+                  className="absolute inset-0 border border-white/10 rounded-2xl transition-colors duration-300"
+                  style={{ borderColor: isActive ? "rgba(131,127,251,0.5)" : "rgba(255,255,255,0.1)" }}
+                />
+
+                {/* Content */}
+                <div className="relative z-10 h-full p-5 flex flex-col justify-between">
+                  <div className="flex items-center gap-4">
+                    <div
+                      className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300"
+                      style={{
+                        background: isActive ? "rgba(131,127,251,0.3)" : "rgba(131,127,251,0.1)",
+                        border: isActive ? "1px solid rgba(131,127,251,0.5)" : "1px solid rgba(131,127,251,0.2)",
+                      }}
                     >
-                      {svc.full}
-                    </h3>
+                      <Icon className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-[#837FFB]/60 text-[10px] font-bold tracking-widest">
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
+                        <h3
+                          className="uppercase tracking-wide leading-tight text-sm font-bold truncate text-white"
+                          style={textStyleToCss(data.serviceCardTitleStyle, DEFAULT_SERVICE_CARD_TITLE_STYLE)}
+                        >
+                          {svc.full}
+                        </h3>
+                      </div>
+                      <p
+                        className="text-white/70 text-xs leading-snug line-clamp-1 transition-all duration-300"
+                        style={{ 
+                          opacity: isActive ? 1 : 0.6,
+                          ...textStyleToCss(data.serviceCardDescStyle, DEFAULT_SERVICE_CARD_DESC_STYLE)
+                        }}
+                      >
+                        {svc.desc}
+                      </p>
+                    </div>
+                    <span className="text-[#837FFB] text-lg shrink-0 transition-transform duration-300" style={{ transform: isActive ? "translateX(4px)" : "none" }}>→</span>
                   </div>
-                  <p
-                    className="text-white/55 text-[11px] sm:text-xs leading-snug line-clamp-2"
-                    style={textStyleToCss(data.serviceCardDescStyle, DEFAULT_SERVICE_CARD_DESC_STYLE)}
-                  >
-                    {svc.desc}
-                  </p>
+
+                  {/* Expanded Content */}
+                  <AnimatePresence>
+                    {isActive && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className="mt-4 pt-4 border-t border-white/10"
+                      >
+                        <button 
+                          className="w-full py-2 bg-[#837FFB] rounded-xl text-white text-xs font-bold uppercase tracking-wider"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/service/${svc.id}`);
+                          }}
+                        >
+                          Learn More Details
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
-                <span className="text-[#837FFB] text-base shrink-0 group-active:translate-x-0.5 transition-transform">→</span>
-              </motion.button>
+
+                {/* Glare effect on active */}
+                {isActive && (
+                   <div className="absolute inset-0 pointer-events-none bg-gradient-to-tr from-white/0 via-white/10 to-white/0 opacity-30" />
+                )}
+              </motion.div>
             );
           })}
         </div>

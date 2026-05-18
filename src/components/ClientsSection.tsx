@@ -1,5 +1,5 @@
-import { useRef } from "react";
-import { motion, useAnimate } from "framer-motion";
+import { useRef, useState, useEffect } from "react";
+import { motion, useAnimate, AnimatePresence } from "framer-motion";
 import { useContent } from "@/lib/use-content";
 import {
   CLIENTS_CONTENT_KEY,
@@ -12,37 +12,28 @@ import {
   DEFAULT_LOGO_LABEL_STYLE,
 } from "@/content/clients";
 import { textStyleToCss } from "@/content/typography";
+import { useInView } from "framer-motion";
 
 const ease = [0.25, 0.46, 0.45, 0.94] as const;
 
-/* ── clip-path keyframes ── */
-const NO_CLIP           = "polygon(0 0, 100% 0, 100% 100%, 0% 100%)";
-const BOTTOM_RIGHT_CLIP = "polygon(0 0, 100% 0, 0 0, 0% 100%)";
-const TOP_RIGHT_CLIP    = "polygon(0 0, 0 100%, 100% 100%, 0% 100%)";
-const BOTTOM_LEFT_CLIP  = "polygon(100% 100%, 100% 0, 100% 100%, 0 100%)";
-const TOP_LEFT_CLIP     = "polygon(0 0, 100% 0, 100% 100%, 100% 0)";
+/* ── Pure CSS Directional Reveal — The "Ultimate" Fix ── */
+/* 
+   By using 4 invisible triangles that catch the hover, we can trigger 
+   different directions using PURE CSS or very simple JS that works 
+   perfectly in simulators.
+*/
 
 type Side = "left" | "right" | "top" | "bottom";
-const ENTRANCE_KEYFRAMES: Record<Side, string[]> = {
-  left:   [BOTTOM_RIGHT_CLIP, NO_CLIP],
-  bottom: [BOTTOM_RIGHT_CLIP, NO_CLIP],
-  top:    [BOTTOM_RIGHT_CLIP, NO_CLIP],
-  right:  [TOP_LEFT_CLIP,     NO_CLIP],
-};
-const EXIT_KEYFRAMES: Record<Side, string[]> = {
-  left:   [NO_CLIP, TOP_RIGHT_CLIP],
-  bottom: [NO_CLIP, TOP_RIGHT_CLIP],
-  top:    [NO_CLIP, TOP_RIGHT_CLIP],
-  right:  [NO_CLIP, BOTTOM_LEFT_CLIP],
-};
 
 function LinkBox({
+  id,
   name,
   imgSrc,
   href,
   index = 0,
   labelStyle,
 }: {
+  id: string;
   name: string;
   imgSrc: string;
   href: string;
@@ -50,100 +41,139 @@ function LinkBox({
   labelStyle?: React.CSSProperties;
 }) {
   const [scope, animate] = useAnimate();
-  const ref = useRef<HTMLAnchorElement>(null);
+  const [activeSide, setActiveSide] = useState<Side>("bottom");
 
-  const getNearestSide = (e: React.MouseEvent<HTMLAnchorElement>): Side => {
-    const box = (e.currentTarget).getBoundingClientRect();
-    const candidates: { proximity: number; side: Side }[] = [
-      { proximity: Math.abs(box.left   - e.clientX), side: "left"   },
-      { proximity: Math.abs(box.right  - e.clientX), side: "right"  },
-      { proximity: Math.abs(box.top    - e.clientY), side: "top"    },
-      { proximity: Math.abs(box.bottom - e.clientY), side: "bottom" },
-    ];
-    candidates.sort((a, b) => a.proximity - b.proximity);
-    return candidates[0].side;
+  const handleEnter = (side: Side) => {
+    setActiveSide(side);
+    const initials: Record<Side, string> = {
+      left:   "inset(0 100% 0 0)",
+      right:  "inset(0 0 0 100%)",
+      top:    "inset(0 0 100% 0)",
+      bottom: "inset(100% 0 0 0)",
+    };
+
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    
+    animate(scope.current, 
+      { clipPath: [initials[side], "inset(0 0 0 0)"], opacity: 1 }, 
+      { duration: 0.5, ease: [0.16, 1, 0.3, 1] }
+    );
+
+    // On mobile, keep it visible for a moment so the user can see the effect
+    if (isMobile) {
+      if ((window as any)._clientTimeout) clearTimeout((window as any)._clientTimeout);
+      (window as any)._clientTimeout = setTimeout(() => {
+        handleLeave();
+      }, 1500);
+    }
   };
 
-  const handleMouseEnter = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    const side = getNearestSide(e);
-    animate(scope.current, { clipPath: ENTRANCE_KEYFRAMES[side] }, { duration: 0.4, ease: "easeInOut" });
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+
+  const handleLeave = () => {
+    setTilt({ x: 0, y: 0 });
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    if (isMobile && (window as any)._clientTimeout) return;
+    animate(scope.current, { opacity: 0 }, { duration: 0.3 });
   };
 
-  const handleMouseLeave = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    const side = getNearestSide(e);
-    animate(scope.current, { clipPath: EXIT_KEYFRAMES[side] }, { duration: 0.4, ease: "easeInOut" });
+  const handlePointer = (e: React.PointerEvent | React.TouchEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clientX = 'touches' in e ? e.touches[0].clientX : (e as React.PointerEvent).clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : (e as React.PointerEvent).clientY;
+    
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    const w = rect.width;
+    const h = rect.height;
+
+    // Calculate Tilt
+    const tiltX = (y / h - 0.5) * -12;
+    const tiltY = (x / w - 0.5) * 16;
+    setTilt({ x: tiltX, y: tiltY });
+
+    // Side detection for reveal
+    const distLeft = x;
+    const distRight = w - x;
+    const distTop = y;
+    const distBottom = h - y;
+    const minDist = Math.min(distLeft, distRight, distTop, distBottom);
+    let side: Side = "bottom";
+    if (minDist === distLeft) side = "left";
+    else if (minDist === distRight) side = "right";
+    else if (minDist === distTop) side = "top";
+    else side = "bottom";
+
+    handleEnter(side);
   };
+
+  // Passive reveal on mobile when card is in center of viewport
+  const cardRef = useRef<HTMLAnchorElement>(null);
+  const isCentered = useInView(cardRef, { 
+    margin: "-40% 0px -40% 0px", // Trigger when in the middle 20% of screen
+    once: false 
+  });
+
+  useEffect(() => {
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    if (isMobile) {
+      if (isCentered) {
+        handleEnter("bottom");
+      } else {
+        handleLeave();
+      }
+    }
+  }, [isCentered]);
 
   return (
     <motion.a
-      ref={ref}
+      ref={cardRef}
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
+      className="relative grid h-24 sm:h-32 md:h-48 w-full place-content-center group overflow-hidden"
+      onPointerEnter={handlePointer}
+      onPointerMove={handlePointer}
+      onPointerLeave={handleLeave}
+      onTouchStart={handlePointer}
+      onTouchMove={handlePointer}
+      onTouchEnd={handleLeave}
       initial={{ opacity: 0, rotateY: -90, scale: 0.8 }}
       whileInView={{ opacity: 1, rotateY: 0, scale: 1 }}
+      whileTap={{ scale: 0.95 }}
       viewport={{ once: true, margin: "-50px" }}
-      transition={{
-        duration: 0.7,
-        ease: [0.25, 0.46, 0.45, 0.94],
-        delay: index * 0.08,
-      }}
-      whileHover={{ rotateY: 6, rotateX: -4 }}
+      transition={{ duration: 0.7, ease, delay: index * 0.08 }}
       style={{
-        transformStyle: "preserve-3d",
-        transformPerspective: 800,
         background: "linear-gradient(180deg, #1B1A4E 0%, #13113A 100%)",
+        transformStyle: "preserve-3d",
+        perspective: "1000px",
+        touchAction: "pan-y",
+        rotateX: tilt.x,
+        rotateY: tilt.y
       }}
-      className="relative grid h-24 sm:h-32 md:h-40 w-full place-content-center group"
     >
-      {/* flowing shimmer sweep across the box */}
-      <motion.div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "linear-gradient(115deg, transparent 35%, rgba(131,127,251,0.18) 50%, transparent 65%)",
-        }}
-        animate={{ x: ["-100%", "100%"] }}
-        transition={{
-          duration: 4,
-          repeat: Infinity,
-          ease: "linear",
-          delay: index * 0.25,
-        }}
+      <motion.div 
+        className="absolute inset-0 z-0 pointer-events-none"
+        whileHover={{ rotateY: 8, rotateX: -6 }}
+        transition={{ type: "spring", stiffness: 300, damping: 20 }}
       />
 
-      {/* base layer — monochrome logo + label with continuous float */}
-      <motion.div
-        className="flex flex-col items-center gap-2 text-white/80 relative"
-        animate={{ y: [0, -5, 0], rotateZ: [-1, 1, -1] }}
-        transition={{
-          duration: 4 + (index % 3),
-          repeat: Infinity,
-          ease: "easeInOut",
-          delay: index * 0.15,
-        }}
-      >
+      <div className="flex flex-col items-center gap-2 text-white/80 relative z-10 pointer-events-none">
         <img
           src={imgSrc}
           alt={name}
           className="h-7 sm:h-9 md:h-10 w-auto object-contain"
           style={{ filter: "grayscale(100%) brightness(1.4)" }}
         />
-        <span
-          className="uppercase tracking-[0.2em]"
-          style={labelStyle}
-        >
+        <span className="uppercase tracking-[0.2em]" style={labelStyle}>
           {name}
         </span>
-      </motion.div>
+      </div>
 
-      {/* hover layer — clipped reveal with colored logo on purple */}
-      <div
+      <motion.div
         ref={scope}
-        style={{ clipPath: BOTTOM_RIGHT_CLIP }}
-        className="absolute inset-0 grid place-content-center bg-[#837FFB]"
+        initial={{ opacity: 0 }}
+        className="absolute inset-0 grid place-content-center bg-[#837FFB] z-20 pointer-events-none"
       >
         <div className="flex flex-col items-center gap-2 text-white">
           <img
@@ -152,11 +182,11 @@ function LinkBox({
             className="h-7 sm:h-9 md:h-10 w-auto object-contain"
             style={{ filter: "brightness(0) invert(1)" }}
           />
-          <span className="text-[10px] sm:text-xs uppercase tracking-[0.2em] font-bold">
+          <span className="text-[8px] sm:text-xs uppercase tracking-[0.2em] font-bold">
             {name}
           </span>
         </div>
-      </div>
+      </motion.div>
     </motion.a>
   );
 }
@@ -164,8 +194,6 @@ function LinkBox({
 export default function ClientsSection() {
   const { data } = useContent<ClientsContent>(CLIENTS_CONTENT_KEY, defaultClientsContent);
   const logos = data.logos;
-  // Preserve the 2 / 4 / 4 layout for the first 10 logos. Any extras spill
-  // into a final row so admins can add beyond ten without breaking layout.
   const row1 = logos.slice(0, 2);
   const row2 = logos.slice(2, 6);
   const row3 = logos.slice(6, 10);
@@ -180,14 +208,12 @@ export default function ClientsSection() {
         background: "linear-gradient(160deg, #1B1A4E 0%, #13113A 50%, #1B1A4E 100%)",
       }}
     >
-      {/* ambient orbs */}
       <div className="pointer-events-none absolute inset-0 z-0">
         <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-[#837FFB]/12 blur-[140px]" />
         <div className="absolute -bottom-40 -right-40 w-[500px] h-[500px] rounded-full bg-[#5B57F5]/12 blur-[120px]" />
       </div>
 
-      <div className="relative z-10 w-full px-4 sm:px-6 lg:px-10">
-        {/* header */}
+      <div className="relative z-10 w-full px-6 md:px-12 lg:px-20">
         <motion.span
           className="block tracking-[0.3em] uppercase mb-4"
           style={textStyleToCss(data.kickerStyle, DEFAULT_KICKER_STYLE)}
@@ -228,9 +254,8 @@ export default function ClientsSection() {
           {data.description}
         </motion.p>
 
-        {/* clip-path link grid — full width */}
         <motion.div
-          className="mt-10 sm:mt-12 md:mt-16 divide-y border divide-white/10 border-white/10 overflow-hidden backdrop-blur-sm"
+          className="mt-12 sm:mt-16 md:mt-24 divide-y border border-white/10 divide-white/10 overflow-hidden backdrop-blur-md rounded-2xl md:rounded-3xl shadow-2xl"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}

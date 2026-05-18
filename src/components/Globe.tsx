@@ -27,7 +27,13 @@ const MARKERS = [
   { label: "Logistics",   lat: 1,   lng: 103  },
 ];
 
-const R = 2.0;
+const getGlobeRadius = () => {
+  if (typeof window === 'undefined') return 2.0;
+  return window.innerWidth < 768 ? 1.65 : 2.0;
+};
+
+const R = getGlobeRadius();
+const ATMOSPHERE_R = R + (typeof window !== 'undefined' && window.innerWidth < 768 ? 0.01 : 0.015);
 
 function latLng(lat: number, lng: number, r = R + 0.18) {
   const phi   = (90 - lat)  * (Math.PI / 180);
@@ -113,7 +119,7 @@ function EarthMesh() {
   return (
     <>
       <mesh>
-        <sphereGeometry args={[R - 0.01, 96, 96]} />
+        <sphereGeometry args={[getGlobeRadius() - 0.01, 96, 96]} />
         <meshPhongMaterial
           map={map}
           normalMap={normal}
@@ -257,7 +263,7 @@ function GlobeScene({
         </Suspense>
 
         {/* thin Fresnel rim — tight to the surface, no wide halo */}
-        <Atmosphere color="#4a9eff" radius={R + 0.015} intensity={0.6} power={4.5} />
+        <Atmosphere color="#4a9eff" radius={ATMOSPHERE_R} intensity={0.6} power={4.5} />
 
         {/* Arc network */}
         {arcGeos.map((geo, i) => {
@@ -307,7 +313,7 @@ function GlobeScene({
 
               {proj && (
                 <Html
-                  position={[0, 0.28, 0]}
+                  position={[typeof window !== 'undefined' && window.innerWidth < 768 ? 0.7 : 0, 0.28, 0]}
                   center
                   distanceFactor={isActive ? 5 : 7}
                   style={{ pointerEvents: "auto", userSelect: "none" }}
@@ -318,7 +324,7 @@ function GlobeScene({
                     className="cursor-pointer group"
                     style={{
                       opacity: activeIndex === null || isActive ? 1 : 0.35,
-                      transform: isActive ? "scale(1.15)" : "scale(1)",
+                      transform: isActive ? "scale(1.15)" : (typeof window !== 'undefined' && window.innerWidth < 768 ? "scale(0.7)" : "scale(1)"),
                       transition: "opacity 0.35s, transform 0.35s",
                     }}
                   >
@@ -330,11 +336,11 @@ function GlobeScene({
                           ? "1.5px solid rgba(131,127,251,0.7)"
                           : "1px solid rgba(255,255,255,0.12)",
                         borderRadius: 8,
-                        padding: "5px 7px",
+                        padding: typeof window !== 'undefined' && window.innerWidth < 768 ? "2px 4px" : "5px 7px",
                         display: "flex",
                         alignItems: "center",
-                        gap: 6,
-                        minWidth: 100,
+                        gap: typeof window !== 'undefined' && window.innerWidth < 768 ? 4 : 6,
+                        minWidth: typeof window !== 'undefined' && window.innerWidth < 768 ? 70 : 100,
                         boxShadow: isActive
                           ? "0 0 30px rgba(131,127,251,0.45), 0 0 60px rgba(131,127,251,0.25)"
                           : "0 4px 16px rgba(0,0,0,0.5)",
@@ -345,8 +351,8 @@ function GlobeScene({
                         src={proj.thumb}
                         alt={proj.title}
                         style={{
-                          width: 26,
-                          height: 26,
+                          width: typeof window !== 'undefined' && window.innerWidth < 768 ? 20 : 26,
+                          height: typeof window !== 'undefined' && window.innerWidth < 768 ? 20 : 26,
                           borderRadius: 5,
                           objectFit: "cover",
                           flexShrink: 0,
@@ -355,7 +361,7 @@ function GlobeScene({
                       <div style={{ minWidth: 0 }}>
                         <p style={{
                           color: "#fff",
-                          fontSize: 10,
+                          fontSize: typeof window !== 'undefined' && window.innerWidth < 768 ? 8 : 10,
                           fontWeight: 700,
                           lineHeight: 1.2,
                           whiteSpace: "nowrap",
@@ -366,7 +372,7 @@ function GlobeScene({
                         </p>
                         <p style={{
                           color: "rgba(131,127,251,0.7)",
-                          fontSize: 8,
+                          fontSize: typeof window !== 'undefined' && window.innerWidth < 768 ? 6 : 8,
                           fontWeight: 600,
                           letterSpacing: "0.05em",
                           textTransform: "uppercase",

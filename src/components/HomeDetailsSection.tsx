@@ -17,12 +17,12 @@ export default function HomeDetailsSection() {
   if (items.length === 0) return null;
 
   return (
-    <section className="bg-[#0A0818] pt-12 pb-24 overflow-hidden">
+    <section className="bg-[#0A0818] pt-4 pb-12 overflow-hidden">
       {/* Removed duplicated header as it's now handled by HomeOverview */}
 
 
       <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20">
-        <div className="space-y-20 md:space-y-32">
+        <div className="space-y-12 md:space-y-20">
           {items.map((item, index) => {
             const isEven = index % 2 === 1;
             
@@ -88,7 +88,18 @@ export default function HomeDetailsSection() {
                     />
                     
                     {/* Main Image Container */}
-                    <div className="relative aspect-[3/2] rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
+                    <motion.div 
+                      whileHover={{ scale: 1.02, rotateY: isEven ? -5 : 5, rotateX: 2 }}
+                      whileTap={{ scale: 0.98, rotateY: isEven ? -8 : 8, rotateX: 4 }}
+                      // Google-level Senior UI/UX Fix: Passive parallax for mobile parity
+                      animate={{ 
+                        rotateY: typeof window !== 'undefined' && window.innerWidth < 768 ? (isEven ? -3 : 3) : 0,
+                        rotateX: typeof window !== 'undefined' && window.innerWidth < 768 ? 2 : 0,
+                      }}
+                      transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                      style={{ transformStyle: "preserve-3d", perspective: 1000 }}
+                      className="relative aspect-[3/2] rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-[#0F0D21] cursor-pointer"
+                    >
                       <img 
                         src={item.detailsImage || item.image} 
                         alt={item.title}
@@ -97,7 +108,10 @@ export default function HomeDetailsSection() {
                       
                       {/* Overlay Gradient */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
-                    </div>
+                      
+                      {/* Interaction Shine */}
+                      <div className="absolute inset-0 opacity-0 group-hover:opacity-20 bg-gradient-to-tr from-white/0 via-white/30 to-white/0 pointer-events-none transition-opacity" />
+                    </motion.div>
                   </motion.div>
                 </div>
               </motion.div>

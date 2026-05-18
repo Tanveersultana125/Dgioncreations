@@ -364,7 +364,7 @@ export default function PortfolioSection() {
                     {project.description}
                   </p>
                   <button
-                    onClick={() => navigate(`/project/${project.slug}`)}
+                    onClick={() => navigate(`/project/${project.slug || ""}`)}
                     className="mt-5 text-[12px] font-bold uppercase tracking-wider text-[#837FFB] hover:text-white transition-colors flex items-center gap-1.5"
                   >
                     View Case Study <span>→</span>

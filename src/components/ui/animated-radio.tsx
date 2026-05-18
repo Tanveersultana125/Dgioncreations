@@ -64,7 +64,7 @@ export default function AnimatedRadio({
 
                 <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-gray-300 dark:via-neutral-800 to-transparent">
                     <div
-                        className="relative h-[calc(100%/var(--option-count,3))] w-full bg-gradient-to-b from-transparent via-purple-600 dark:via-purple-500 to-transparent transition-transform duration-500 ease-[cubic-bezier(0.37,1.95,0.66,0.56)]"
+                        className="relative h-[calc(100%/var(--option-count,3))] w-full bg-gradient-to-b from-transparent via-purple-600 dark:via-purple-500 to-transparent transition-transform duration-500 ease-glider"
                         style={{ 
                             transform: getGliderTransform(),
                             // @ts-ignore

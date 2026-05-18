@@ -156,45 +156,94 @@ export default function AboutSection() {
         </p>
       </motion.div>
 
-      {/* ── Mobile vertical timeline (md and below) ── */}
-      <div className="md:hidden relative max-w-xl mx-auto px-5 sm:px-6">
-        <div className="absolute left-[18px] top-2 bottom-2 w-px bg-gradient-to-b from-[#837FFB]/60 via-[#837FFB]/30 to-transparent" />
-        <ol className="space-y-10 sm:space-y-12">
+      {/* ── Mobile WOW: Dynamic Wavy Timeline ── */}
+      <div className="md:hidden relative max-w-xl mx-auto px-5 sm:px-6 py-10">
+        {/* Wavy Background Path */}
+        <div className="absolute left-[20px] top-0 bottom-0 w-[40px] pointer-events-none opacity-20">
+          <svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 40 1000" className="overflow-visible">
+            <path 
+              d="M 20 0 Q 40 100, 20 200 T 20 400 T 20 600 T 20 800 T 20 1000" 
+              fill="none" 
+              stroke="#837FFB" 
+              strokeWidth="2" 
+              strokeDasharray="8 8"
+            />
+          </svg>
+        </div>
+
+        {/* Scroll-Synced Glowing Tracker Dot */}
+        <motion.div 
+          className="absolute left-[10px] z-30 w-5 h-5 rounded-full bg-[#837FFB] shadow-[0_0_20px_#837FFB]"
+          style={{ 
+            top: `${scrollProgressVal * 100}%`,
+          }}
+        />
+
+        <ol className="space-y-24">
           {timeline.map((item, i) => (
             <motion.li
               key={i}
-              className="relative pl-12"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.5, delay: i * 0.05, ease }}
+              className="relative pl-14"
+              initial={{ opacity: 0, x: -20, scale: 0.95 }}
+              whileInView={{ opacity: 1, x: 0, scale: 1 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             >
-              <span
-                className="absolute left-0 top-1.5 w-[18px] h-[18px] rounded-full flex items-center justify-center"
-                style={{ background: "#837FFB", boxShadow: "0 0 16px rgba(131,127,251,0.6)" }}
-              >
-                <span className="w-2 h-2 rounded-full bg-white" />
-              </span>
-              <p className="font-mono font-black text-xl tracking-tighter text-[#837FFB]">
-                {item.year}
-              </p>
-              <h3
-                className="text-white font-bold mt-1.5 leading-tight text-lg"
-                style={textStyleToCss(item.titleStyle || data.spiralItemTitleStyle)}
-              >
-                {item.title}
-              </h3>
-              <p
-                className="text-white/55 leading-relaxed mt-2 text-sm"
-                style={textStyleToCss(item.descStyle || data.spiralItemDescStyle)}
-              >
-                {item.desc}
-              </p>
-              {item.images && item.images.length > 0 && (
-                <div className="mt-4 -mx-1">
-                  <CreativeCarousel images={item.images} autoplay={true} showPagination={true} />
+              {/* Milestone Pulse */}
+              <div className="absolute left-[-2px] top-2 z-20">
+                <div className="relative">
+                  <div className="w-6 h-6 rounded-full bg-background border-2 border-[#837FFB] flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-[#837FFB]" />
+                  </div>
+                  {/* Decorative Glow */}
+                  <div className="absolute inset-0 bg-[#837FFB]/20 blur-xl rounded-full scale-150" />
                 </div>
-              )}
+              </div>
+
+              {/* Glassmorphic Project Card */}
+              <motion.div 
+                whileHover={{ y: -5 }}
+                className="relative rounded-[32px] p-1 border border-white/5 bg-gradient-to-b from-white/[0.03] to-transparent backdrop-blur-sm overflow-hidden"
+              >
+                <div className="p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="px-3 py-1 rounded-full bg-[#837FFB]/10 border border-[#837FFB]/20 text-[#837FFB] text-[10px] font-black uppercase tracking-widest">
+                      {item.year}
+                    </span>
+                    <div className="h-px flex-1 bg-gradient-to-r from-[#837FFB]/30 to-transparent" />
+                  </div>
+                  
+                  <h3
+                    className="text-white font-bold text-2xl tracking-tight leading-tight"
+                    style={textStyleToCss(item.titleStyle || data.spiralItemTitleStyle)}
+                  >
+                    {item.title}
+                  </h3>
+                  
+                  <p
+                    className="text-white/40 leading-relaxed mt-4 text-sm font-medium"
+                    style={textStyleToCss(item.descStyle || data.spiralItemDescStyle)}
+                  >
+                    {item.desc}
+                  </p>
+                </div>
+
+                {item.images && item.images.length > 0 && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="px-4 pb-4"
+                  >
+                    <div className="rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] ring-1 ring-white/10">
+                      <CreativeCarousel images={item.images} autoplay={true} showPagination={true} />
+                    </div>
+                  </motion.div>
+                )}
+                
+                {/* Subtle Card Glow */}
+                <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-[#837FFB]/10 blur-[80px] rounded-full pointer-events-none" />
+              </motion.div>
             </motion.li>
           ))}
         </ol>

@@ -74,7 +74,11 @@ export function MarkupText({
     if (m.index > last) parts.push(text.slice(last, m.index));
     const { text: word, size, color } = parseHighlightInner(m[1]);
     const css: React.CSSProperties = { ...baseCss };
-    if (size) css.fontSize = `${size}px`;
+    if (size) {
+      css.fontSize = size <= 20 
+        ? `${size}px` 
+        : `clamp(${Math.max(16, size * 0.45)}px, ${size * 0.08}vw + ${size * 0.25}px, ${size}px)`;
+    }
     if (color) css.color = color;
     parts.push(
       <span key={key++} className={highlightClassName} style={css}>

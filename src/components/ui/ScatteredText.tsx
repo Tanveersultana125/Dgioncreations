@@ -50,9 +50,12 @@ export default function ScatteredText({
           <span key={wIdx} className="inline-block whitespace-nowrap">
             {word.split("").map((char, cIdx) => {
               const i = globalIndex++;
+              const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+              const scatterMultiplier = isMobile ? 0.3 : 1.0; // Reduce scatter on mobile
+
               const seed = (i * 137.508 + 42) % 1;
-              const randomX = (seed - 0.5) * 300;
-              const randomY = ((i * 73.13 + 17) % 1 - 0.5) * 250;
+              const randomX = (seed - 0.5) * 300 * scatterMultiplier;
+              const randomY = ((i * 73.13 + 17) % 1 - 0.5) * 250 * scatterMultiplier;
               const randomRotate = (seed - 0.5) * 360;
               const randomScale = 0.3 + seed * 1.5;
 

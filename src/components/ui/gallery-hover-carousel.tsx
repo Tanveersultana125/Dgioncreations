@@ -93,12 +93,53 @@ export default function GalleryHoverCarousel({
           </div>
 
           <div className="w-full max-w-full">
-            <CarouselContent className="hide-scrollbar w-full max-w-full -ml-4">
+            {/* Native Side-Scroll for Mobile (No JS dependency, smoother on touch) */}
+            <div className="flex lg:hidden overflow-x-auto snap-x snap-mandatory hide-scrollbar -ml-6 px-6 gap-5 pb-8">
+              {items.map((item) => (
+                <div key={item.id} className="min-w-[85vw] snap-center">
+                  <Link to={item.url} className="block w-full">
+                    <Card className="overflow-hidden rounded-[24px] bg-[#0D0B24] border-white/5 relative h-[400px]">
+                      {/* Image Area */}
+                      <div className="relative h-[55%] w-full">
+                        <img
+                          src={item.image}
+                          alt={item.title}
+                          className="h-full w-full object-cover"
+                        />
+                        <div className="absolute bottom-0 left-0 w-full h-16 bg-gradient-to-t from-black/60 to-transparent" />
+                      </div>
+                      
+                      {/* Content Area - Always Visible on Mobile */}
+                      <div className="p-6 h-[45%] flex flex-col justify-center bg-[#08061A]/95 backdrop-blur-md border-t border-white/5">
+                        <h3 className="text-xl font-bold text-white mb-2">{item.title}</h3>
+                        <p className="text-white/50 text-sm leading-relaxed line-clamp-3">
+                          {item.summary}
+                        </p>
+                        
+                        <div className="absolute bottom-4 right-4">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-10 w-10 border-white/10 bg-white/5 rounded-full"
+                          >
+                            <ArrowRight className="size-4 text-white" />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  </Link>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop View: Interactive Carousel */}
+            <CarouselContent className="hidden lg:flex hide-scrollbar w-full max-w-full -ml-4">
               {items.map((item) => (
                 <CarouselItem key={item.id} className="pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
                   <Link to={item.url} className="group block relative w-full h-[450px]">
                     <Card className="overflow-hidden rounded-[32px] h-full w-full bg-[#0D0B24] border-white/5 transition-all duration-700 group-hover:border-[#837FFB]/40 group-hover:shadow-[0_20px_50px_rgba(131,127,251,0.15)] relative">
                       <div className="absolute inset-0 bg-gradient-to-br from-[#837FFB]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                      
                       {/* Image */}
                       <div className="relative h-full w-full transition-all duration-500 group-hover:h-[45%]">
                         <img
@@ -106,10 +147,9 @@ export default function GalleryHoverCarousel({
                           alt={item.title}
                           className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-110"
                         />
-                        {/* Fade overlay at bottom */}
                         <div className="absolute bottom-0 left-0 w-full h-20 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                       </div>
-
+ 
                       {/* Text Section */}
                       <div className="absolute bottom-0 left-0 w-full px-6 transition-all duration-500 group-hover:h-[55%] group-hover:flex flex-col justify-center bg-[#08061A]/95 backdrop-blur-md opacity-0 group-hover:opacity-100 border-t border-white/5">
                         <h3 className="text-xl font-bold text-white mb-2">{item.title}</h3>
