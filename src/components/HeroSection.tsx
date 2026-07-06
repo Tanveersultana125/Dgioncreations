@@ -98,7 +98,7 @@ export default function HeroSection() {
           </h1>
 
           <p
-            className="max-w-md mb-8 sm:mb-10 leading-relaxed text-sm sm:text-base"
+            className="max-w-md w-full mb-8 sm:mb-10 leading-relaxed text-sm sm:text-base break-words hyphens-none px-1"
             style={textStyleToCss(content.descriptionStyle, DEFAULT_DESCRIPTION_STYLE)}
           >
             {content.description}

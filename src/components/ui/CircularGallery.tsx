@@ -59,34 +59,37 @@ function createTextTexture(gl, text, summary = '', font = 'bold 42px Figtree', c
   
   context.clearRect(0, 0, canvas.width, canvas.height);
   
-  const grad = context.createLinearGradient(0, canvas.height * 0.3, 0, canvas.height);
+  // Bottom scrim — only for text legibility. Kept light and low so the artwork
+  // stays bright and the cards read as premium rather than murky/black.
+  const grad = context.createLinearGradient(0, canvas.height * 0.55, 0, canvas.height);
   grad.addColorStop(0, 'rgba(0,0,0,0)');
-  grad.addColorStop(1, 'rgba(0,0,0,0.85)');
+  grad.addColorStop(1, 'rgba(0,0,0,0.5)');
   context.fillStyle = grad;
-  context.fillRect(0, canvas.height * 0.3, canvas.width, canvas.height);
+  context.fillRect(0, canvas.height * 0.55, canvas.width, canvas.height);
   
   // 2. Main Title - Near Bottom
-  // ULTRA-MINI for mobile parity - 8px is the absolute limit for professional elegance
+  // Mobile cards are now full-size, so labels render at a readable, proportional
+  // size instead of the old microscopic 8px.
   const isActuallyMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
-  const titleFontSize = isActuallyMobile ? 'bold 8px Figtree' : font;
+  const titleFontSize = isActuallyMobile ? 'bold 26px Figtree' : font;
   context.font = titleFontSize;
   context.fillStyle = color;
   context.textBaseline = 'middle';
   context.textAlign = 'center';
   context.shadowColor = 'rgba(0,0,0,0.5)';
   context.shadowBlur = 10;
-  context.fillText(text.toUpperCase(), canvas.width / 2, canvas.height - (isActuallyMobile ? 60 : 150));
-  
+  context.fillText(text.toUpperCase(), canvas.width / 2, canvas.height - (isActuallyMobile ? 135 : 150));
+
   // 3. Explore Button Pill - Bottom Center
-  const btnWidth = isActuallyMobile ? 40 : 180;
-  const btnHeight = isActuallyMobile ? 12 : 54;
+  const btnWidth = isActuallyMobile ? 140 : 180;
+  const btnHeight = isActuallyMobile ? 44 : 54;
   const btnX = (canvas.width - btnWidth) / 2;
-  const btnY = canvas.height - (isActuallyMobile ? 50 : 90);
-  
+  const btnY = canvas.height - (isActuallyMobile ? 82 : 90);
+
   context.shadowBlur = 0;
   context.fillStyle = '#837FFB';
-  
-  const r = isActuallyMobile ? 4 : 27;
+
+  const r = isActuallyMobile ? 22 : 27;
   context.beginPath();
   context.moveTo(btnX + r, btnY);
   context.lineTo(btnX + btnWidth - r, btnY);
@@ -100,9 +103,9 @@ function createTextTexture(gl, text, summary = '', font = 'bold 42px Figtree', c
   context.closePath();
   context.fill();
   
-  context.font = isMobile ? '900 8px Inter, sans-serif' : '900 15px Inter, sans-serif';
+  context.font = isMobile ? '900 13px Inter, sans-serif' : '900 15px Inter, sans-serif';
   context.fillStyle = 'white';
-  context.letterSpacing = isMobile ? '0.2px' : '1px';
+  context.letterSpacing = isMobile ? '0.8px' : '1px';
   context.fillText('EXPLORE', canvas.width / 2, btnY + btnHeight / 2 + 1);
 
   const texture = new Texture(gl, { generateMipmaps: false });
@@ -264,9 +267,11 @@ class Media {
           float edgeSmooth = 0.002;
           float alpha = 1.0 - smoothstep(-edgeSmooth, edgeSmooth, d);
           
-          float vignette = 1.0 - smoothstep(0.3, 0.6, length(vUv - 0.5));
-          color *= mix(0.85, 1.0, vignette);
-          
+          // Gentle brightness lift so dark source artwork reads clean and
+          // premium; center gets a touch more pop than the soft edges.
+          float vignette = 1.0 - smoothstep(0.35, 0.7, length(vUv - 0.5));
+          color *= mix(1.02, 1.14, vignette);
+
           gl_FragColor = vec4(color, alpha);
         }
       `,
@@ -358,12 +363,14 @@ class Media {
     }
     
     const isMobile = this.screen.width < 1024;
-    const cardHeightPercent = isMobile ? 0.1 : 0.43; 
+    // Bigger, portrait cards on mobile so the gallery reads as a premium
+    // showcase instead of a row of tiny thumbnails.
+    const cardHeightPercent = isMobile ? 0.42 : 0.43;
     this.plane.scale.y = this.viewport.height * cardHeightPercent;
-    this.plane.scale.x = this.plane.scale.y * (isMobile ? 0.5 : 0.7); 
-    
+    this.plane.scale.x = this.plane.scale.y * (isMobile ? 0.66 : 0.7);
+
     this.plane.program.uniforms.uPlaneSizes.value = [this.plane.scale.x, this.plane.scale.y];
-    this.padding = isMobile ? 0.8 : 1.5; 
+    this.padding = isMobile ? 0.55 : 1.5;
 
     // Re-create title on resize if mobile status changes
     if (this.title) {

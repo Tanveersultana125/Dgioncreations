@@ -25,7 +25,13 @@ export default function HomeDetailsSection() {
         <div className="space-y-12 md:space-y-20">
           {items.map((item, index) => {
             const isEven = index % 2 === 1;
-            
+            // On narrow screens the columns sit close together, so a big slide-in
+            // would visually cross into the neighbouring column mid-animation.
+            // Shrink the horizontal entrance distance on mobile to avoid that.
+            const isMobileVp = typeof window !== 'undefined' && window.innerWidth < 768;
+            const textEnterX = isMobileVp ? (isEven ? 10 : -10) : (isEven ? 30 : -30);
+            const imgEnterX = isMobileVp ? 0 : (isEven ? -50 : 50);
+
             return (
               <motion.div 
                 key={item.id}
@@ -33,37 +39,39 @@ export default function HomeDetailsSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
                 viewport={{ once: true, margin: "-100px" }}
-                className={`flex flex-col ${isEven ? 'md:flex-row-reverse' : 'md:flex-row'} items-center gap-12 md:gap-24`}
+                className={`flex flex-row ${isEven ? 'md:flex-row-reverse' : 'md:flex-row'} items-center gap-4 md:gap-24`}
               >
-                {/* Text Content */}
-                <div className="flex-[1.2] space-y-8">
+                {/* Text Content — w-full + min-w-0 so the block can never grow
+                    past the viewport on mobile (max-w-xl on the paragraph used
+                    to blow the column out to 576px and clip on small screens). */}
+                <div className="flex-[1.05] md:flex-[1.2] w-full min-w-0 space-y-3 md:space-y-8">
                   <motion.div
-                    initial={{ opacity: 0, x: isEven ? 30 : -30 }}
+                    initial={{ opacity: 0, x: textEnterX }}
                     whileInView={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2, duration: 0.8 }}
                     viewport={{ once: true }}
                   >
-                    <div className="inline-flex px-4 py-2 bg-white/5 backdrop-blur-md border border-white/10 rounded-full mb-8">
-                      <span className="text-[#837FFB] text-[10px] font-black tracking-[0.3em] uppercase">
+                    <div className="inline-flex px-2.5 py-1 md:px-4 md:py-2 bg-white/5 backdrop-blur-md border border-white/10 rounded-full mb-3 md:mb-8">
+                      <span className="text-[#837FFB] text-[8px] md:text-[10px] font-black tracking-[0.2em] md:tracking-[0.3em] uppercase">
                         {item.badge}
                       </span>
                     </div>
-                    <h2 className="text-4xl md:text-6xl font-extrabold text-white leading-tight mb-8">
+                    <h2 className="text-2xl md:text-6xl font-extrabold text-white leading-[1.1] md:leading-tight mb-2.5 md:mb-8">
                       {item.title}
                     </h2>
-                    <p className="text-gray-400 text-lg md:text-xl leading-relaxed max-w-xl">
+                    <p className="text-gray-400 text-[12px] md:text-xl leading-snug md:leading-relaxed max-w-xl">
                       {item.summary}
                     </p>
-                    
+
                     <button
                       onClick={() => navigate(item.url)}
-                      className="mt-12 group relative inline-flex items-center gap-4 px-8 py-4 bg-white/5 border border-white/10 rounded-full text-white font-bold transition-all hover:bg-[#837FFB] hover:border-[#837FFB] active:scale-95"
+                      className="mt-4 md:mt-12 group relative inline-flex w-full md:w-auto items-center justify-between md:justify-start gap-2 md:gap-4 px-4 md:px-8 py-2.5 md:py-4 bg-white/5 border border-white/10 rounded-full text-white font-bold text-[10px] md:text-base tracking-wide transition-all hover:bg-[#837FFB] hover:border-[#837FFB] active:scale-95"
                     >
-                      EXPLORE {item.title.toUpperCase()}
-                      <svg 
-                        className="w-5 h-5 transition-transform group-hover:translate-x-2" 
-                        fill="none" 
-                        stroke="currentColor" 
+                      <span className="truncate">EXPLORE {item.title.toUpperCase()}</span>
+                      <svg
+                        className="w-4 h-4 md:w-5 md:h-5 shrink-0 transition-transform group-hover:translate-x-1 md:group-hover:translate-x-2"
+                        fill="none"
+                        stroke="currentColor"
                         viewBox="0 0 24 24"
                       >
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
@@ -73,9 +81,9 @@ export default function HomeDetailsSection() {
                 </div>
 
                 {/* Visual Content */}
-                <div className="flex-[0.8] w-full max-w-2xl">
+                <div className="flex-[0.95] md:flex-[0.8] w-full max-w-2xl">
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.9, x: isEven ? -50 : 50 }}
+                    initial={{ opacity: 0, scale: 0.9, x: imgEnterX }}
                     whileInView={{ opacity: 1, scale: 1, x: 0 }}
                     transition={{ duration: 1 }}
                     viewport={{ once: true }}
@@ -98,7 +106,7 @@ export default function HomeDetailsSection() {
                       }}
                       transition={{ type: "spring", stiffness: 300, damping: 25 }}
                       style={{ transformStyle: "preserve-3d", perspective: 1000 }}
-                      className="relative aspect-[3/2] rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-[#0F0D21] cursor-pointer"
+                      className="relative aspect-[3/4] md:aspect-[3/2] rounded-2xl md:rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-[#0F0D21] cursor-pointer"
                     >
                       <img 
                         src={item.detailsImage || item.image} 
