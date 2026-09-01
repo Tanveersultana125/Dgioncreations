@@ -73,6 +73,23 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      /**
+       * Opacity steps used by the `/NN` colour modifier.
+       *
+       * Tailwind's default scale is 0, 5, 10, 15 … 95, 100. A modifier that is
+       * not in the scale does not warn — it silently produces no rule at all,
+       * so `bg-[#22175A]/98` rendered a fully TRANSPARENT panel rather than a
+       * near-opaque one. That is what made the mobile nav menu see-through.
+       *
+       * These are the off-scale steps the design actually uses. Add a value
+       * here before using it, or write it inline as `/[0.98]`.
+       */
+      opacity: {
+        2: "0.02",
+        8: "0.08",
+        12: "0.12",
+        98: "0.98",
+      },
       keyframes: {
         "accordion-down": {
           from: { height: "0" },
