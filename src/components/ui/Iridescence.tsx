@@ -1,5 +1,6 @@
 import { Renderer, Program, Mesh, Color, Triangle } from 'ogl';
 import { useEffect, useRef } from 'react';
+import { cappedDpr, getDeviceTier, useInViewport } from '@/lib/perf';
 
 import './Iridescence.css';
 
@@ -50,10 +51,16 @@ export default function Iridescence({ color = [1, 1, 1], speed = 1.0, amplitude 
   const ctnDom = useRef<HTMLDivElement>(null);
   const mousePos = useRef({ x: 0.5, y: 0.5 });
 
+  const visible = useInViewport(ctnDom, '150px');
+  const visibleRef = useRef(visible);
+  visibleRef.current = visible;
+
   useEffect(() => {
     if (!ctnDom.current) return;
     const ctn = ctnDom.current;
-    const renderer = new Renderer({ alpha: true });
+    // Full-screen fragment shaders are pure fill-rate. Rendering one at a 3x
+    // device pixel ratio costs 9x the pixels for a background nobody inspects.
+    const renderer = new Renderer({ alpha: true, dpr: cappedDpr(getDeviceTier() === 'low' ? 1 : 1.5) });
     const gl = renderer.gl;
     // Set clear color to fully transparent so the site background shows through
     gl.clearColor(0, 0, 0, 0);
@@ -71,7 +78,7 @@ export default function Iridescence({ color = [1, 1, 1], speed = 1.0, amplitude 
         );
       }
     }
-    window.addEventListener('resize', resize, false);
+    window.addEventListener('resize', resize, { passive: true });
     resize();
 
     const geometry = new Triangle(gl);
@@ -95,6 +102,8 @@ export default function Iridescence({ color = [1, 1, 1], speed = 1.0, amplitude 
 
     function update(t: number) {
       animateId = requestAnimationFrame(update);
+      // Off-screen or backgrounded: keep the loop alive but do no GPU work.
+      if (!visibleRef.current) return;
       program.uniforms.uTime.value = t * 0.001;
       renderer.render({ scene: mesh });
     }
@@ -110,7 +119,7 @@ export default function Iridescence({ color = [1, 1, 1], speed = 1.0, amplitude 
       program.uniforms.uMouse.value[1] = y;
     }
     if (mouseReact) {
-      ctn.addEventListener('mousemove', handleMouseMove);
+      ctn.addEventListener('mousemove', handleMouseMove, { passive: true });
     }
 
     return () => {

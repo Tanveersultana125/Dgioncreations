@@ -6,7 +6,12 @@
   left: 0;
   overflow: hidden;
   cursor: grab;
-  touch-action: none;
+  /* `touch-action: none` here swallowed every touch gesture over the gallery.
+     Since the gallery is ~520px tall on a phone, a finger landing anywhere on
+     it could no longer scroll the page at all — the page simply froze.
+     `pan-y` hands vertical scrolling back to the browser while the gallery
+     keeps handling horizontal drags. */
+  touch-action: pan-y;
 }
 
 .circular-gallery:active {

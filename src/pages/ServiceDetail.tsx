@@ -6,6 +6,7 @@ import { getServiceById } from "@/data/services";
 import { useContent } from "@/lib/use-content";
 import { SERVICES_CONTENT_KEY, defaultServicesContent, type ServicesContent } from "@/content/services";
 import FloatingLines from "@/components/FloatingLines";
+import { GlowOrb } from "@/components/ui/GlowOrb";
 import Iridescence from "@/components/ui/Iridescence";
 import { useMotionValue, useSpring, useTransform } from "framer-motion";
 import { Carousel_004 } from "@/components/ui/carousel-004";
@@ -119,7 +120,7 @@ function ServiceCTACard({ service, navigate }: { service: any, navigate: any }) 
                 document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" });
               }, 50);
             }}
-            className="group relative inline-flex items-center gap-3 px-10 py-5 bg-white text-black rounded-full font-bold text-lg hover:scale-105 active:scale-95 transition-all"
+            className="group relative inline-flex items-center gap-3 px-6 py-3.5 md:px-10 md:py-5 bg-white text-black rounded-full font-bold text-sm md:text-lg hover:scale-105 active:scale-95 transition-all"
           >
             <span>Start Project</span>
             <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -144,10 +145,6 @@ export default function ServiceDetail() {
   // Merge so the user's uploaded images show up!
   const service = (baseService && cmsService ? { ...baseService, ...cmsService } : baseService) as any;
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [id]);
-
   if (!service) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#08061A] text-white">
@@ -171,8 +168,8 @@ export default function ServiceDetail() {
         <div className="absolute inset-0 opacity-[0.05] contrast-150 brightness-100 mix-blend-overlay" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} />
         
         {/* Soft Ambient Glows */}
-        <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] rounded-full opacity-[0.12] blur-[140px] animate-pulse" style={{ background: service.color, animationDuration: '8s' }} />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full opacity-[0.08] blur-[120px] animate-pulse" style={{ background: "#5B57F5", animationDuration: '10s' }} />
+        <GlowOrb color={service.color} opacity={0.12} pulse duration={8} className="top-[-20%] left-[-10%] w-[70%] h-[70%]" />
+        <GlowOrb color="#5B57F5" opacity={0.08} pulse duration={10} className="bottom-[-10%] right-[-10%] w-[60%] h-[60%]" />
         
         {/* Volumetric Light Ray */}
         <div 
@@ -208,7 +205,7 @@ export default function ServiceDetail() {
       {/* Hero Section */}
       <section className="relative pt-44 pb-24 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-start">
             <div className="lg:col-span-7">
               <motion.div
                 initial={{ opacity: 0, x: -30 }}
@@ -235,7 +232,7 @@ export default function ServiceDetail() {
                   {service.desc}
                 </p>
 
-                <div className="flex flex-wrap gap-12 pt-12 border-t border-white/5">
+                <div className="flex flex-wrap gap-6 md:gap-12 pt-8 md:pt-12 border-t border-white/5">
                   {service.stats.map((stat) => (
                     <div key={stat.label}>
                       <StatCounter value={stat.value} color={service.color} />
@@ -273,7 +270,7 @@ export default function ServiceDetail() {
       {/* Features & Content */}
       <section className="py-24 relative z-10">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-24">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-24">
             {/* Left: Overview */}
             <div>
               <motion.div

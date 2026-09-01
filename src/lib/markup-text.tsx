@@ -1,5 +1,5 @@
 import React from "react";
-import { FONT_FAMILIES, type TextStyle } from "@/content/typography";
+import { fluidFontSize, resolveFontStack, type TextStyle } from "@/content/typography";
 
 const HL_RE = /\*\*([^*\n]+?)\*\*/g;
 
@@ -59,8 +59,11 @@ export function MarkupText({
         fontWeight: highlightStyle.bold ? 700 : undefined,
         fontStyle: highlightStyle.italic ? "italic" : undefined,
         textDecoration: highlightStyle.underline ? "underline" : undefined,
+        // Resolve through the same rule the parent heading uses, so a
+        // highlighted word never renders in a different face than the words
+        // around it (large text site-wide switches to the display font).
         fontFamily: highlightStyle.fontFamily
-          ? FONT_FAMILIES[highlightStyle.fontFamily]?.stack
+          ? resolveFontStack(highlightStyle.fontFamily, highlightStyle.fontSize)
           : undefined,
       }
     : {};
@@ -75,9 +78,12 @@ export function MarkupText({
     const { text: word, size, color } = parseHighlightInner(m[1]);
     const css: React.CSSProperties = { ...baseCss };
     if (size) {
-      css.fontSize = size <= 20 
-        ? `${size}px` 
-        : `clamp(${Math.max(16, size * 0.45)}px, ${size * 0.08}vw + ${size * 0.25}px, ${size}px)`;
+      css.fontSize = fluidFontSize(size);
+      // A per-word size override changes which face the shared rule picks, so
+      // re-resolve the family against the overridden size too.
+      if (highlightStyle?.fontFamily) {
+        css.fontFamily = resolveFontStack(highlightStyle.fontFamily, size);
+      }
     }
     if (color) css.color = color;
     parts.push(

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useInViewport } from '@/lib/perf';
 import * as THREE from 'three';
 import './GridDistortion.css';
 
@@ -50,6 +51,10 @@ const GridDistortion = ({
   const imageAspectRef = useRef(1);
   const animationIdRef = useRef<number>(0);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
+
+  const visible = useInViewport(containerRef, '150px');
+  const visibleRef = useRef(visible);
+  visibleRef.current = visible;
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -152,7 +157,7 @@ const GridDistortion = ({
       resizeObserver.observe(container);
       resizeObserverRef.current = resizeObserver;
     } else {
-      window.addEventListener('resize', handleResize);
+      window.addEventListener('resize', handleResize, { passive: true });
     }
 
     const mouseState = {
@@ -187,8 +192,8 @@ const GridDistortion = ({
       });
     };
 
-    container.addEventListener('mousemove', handleMouseMove);
-    container.addEventListener('mouseleave', handleMouseLeave);
+    container.addEventListener('mousemove', handleMouseMove, { passive: true });
+    container.addEventListener('mouseleave', handleMouseLeave, { passive: true });
 
     handleResize();
 
@@ -196,6 +201,9 @@ const GridDistortion = ({
       animationIdRef.current = requestAnimationFrame(animate);
 
       if (!renderer || !scene || !camera) return;
+      // The per-frame work below is a size x size CPU loop plus a full texture
+      // upload — far too expensive to keep doing while nobody is looking at it.
+      if (!visibleRef.current) return;
 
       uniforms.time.value += 0.05;
 

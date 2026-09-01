@@ -18,6 +18,32 @@ gsap.registerPlugin(ScrollTrigger);
  * - prefers-reduced-motion → skip Lenis, leave native scroll in place
  * - ScrollTrigger defaults make scroll-in animations play-once by default
  */
+
+/**
+ * The live Lenis instance, or null when smooth scrolling is disabled
+ * (reduced-motion) or not mounted yet.
+ *
+ * Anything that wants to move the page MUST go through `scrollToTop` below
+ * rather than calling `window.scrollTo`. While Lenis is running it owns the
+ * scroll position, and a raw `window.scrollTo` leaves Lenis's internal target
+ * pointing at the old offset — the next wheel event snaps the page back to
+ * where it was, which reads exactly like the page being stuck.
+ */
+let lenisInstance: Lenis | null = null;
+
+export function getLenis(): Lenis | null {
+  return lenisInstance;
+}
+
+/** Jump to the top of the page, correctly, whether or not Lenis is active. */
+export function scrollToTop(immediate = true) {
+  if (lenisInstance) {
+    lenisInstance.scrollTo(0, { immediate });
+    return;
+  }
+  window.scrollTo({ top: 0, behavior: immediate ? "auto" : "smooth" });
+}
+
 export function SmoothScrollProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Respect user accessibility setting — no smooth scroll, no GSAP animations
@@ -32,11 +58,19 @@ export function SmoothScrollProvider({ children }: { children: ReactNode }) {
     }
 
     const lenis = new Lenis({
-      duration: 1.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      // 1.2s of momentum on every wheel tick reads as lag on a content site —
+      // the page keeps gliding after the user has stopped. `lerp` gives a
+      // shorter, more responsive settle that still feels smooth.
+      lerp: 0.12,
       smoothWheel: true,
+      wheelMultiplier: 1,
       touchMultiplier: 1.2,
+      // Touch devices already have excellent native momentum scrolling, and
+      // hijacking it is the single most common cause of "the site feels broken
+      // on my phone". Leave phones and tablets alone.
+      syncTouch: false,
     });
+    lenisInstance = lenis;
 
     // Every Lenis frame → tell ScrollTrigger to re-evaluate triggers
     lenis.on("scroll", ScrollTrigger.update);
@@ -54,6 +88,7 @@ export function SmoothScrollProvider({ children }: { children: ReactNode }) {
       window.clearTimeout(refreshId);
       gsap.ticker.remove(tick);
       lenis.destroy();
+      lenisInstance = null;
     };
   }, []);
 

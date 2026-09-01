@@ -77,7 +77,7 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
                 mass: 0.6,
                 delay: index * 0.05
               }}
-              className="text-9xl md:text-[13rem] font-black tracking-[-0.15em] italic select-none inline-block relative z-10"
+              className="text-[clamp(3rem,19vw,8rem)] md:text-[13rem] font-black tracking-[-0.15em] italic select-none inline-block relative z-10"
               style={{
                   fontFamily: "'Inter', sans-serif",
                   willChange: "transform, opacity",

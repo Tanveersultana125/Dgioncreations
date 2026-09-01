@@ -1,6 +1,7 @@
 'use client'
 
-import { Suspense, lazy, Component, useEffect, useState, type ReactNode } from 'react'
+import { Suspense, lazy, Component, useEffect, useRef, useState, type ReactNode } from 'react'
+import { getDeviceTier, useLazyMount } from '@/lib/perf'
 
 // Flip to `false` to disable Spline and force the CSS orb fallback.
 const SPLINE_ENABLED = true
@@ -83,34 +84,58 @@ interface SplineSceneProps {
 }
 
 export function SplineScene({ scene, className }: SplineSceneProps) {
+  const hostRef = useRef<HTMLDivElement>(null)
   const [webGL, setWebGL] = useState<boolean | null>(null)
+  const [idle, setIdle] = useState(false)
+
+  // Only start downloading the ~4 MB Spline runtime once the hero is on screen.
+  const near = useLazyMount(hostRef, '200px')
 
   useEffect(() => { setWebGL(detectWebGL()) }, [])
+
+  /**
+   * Wait for the browser to finish the work that actually matters — first
+   * paint, fonts, the real content — before handing it a 3D engine. Without
+   * this, Spline's parse + compile lands right in the middle of page load and
+   * blocks the main thread for seconds, which reads to the user as the site
+   * being frozen.
+   */
+  useEffect(() => {
+    if (!near) return
+    const ric = (window as Window & {
+      requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number
+    }).requestIdleCallback
+    if (ric) {
+      const id = ric(() => setIdle(true), { timeout: 2000 })
+      return () => (window as Window & { cancelIdleCallback?: (id: number) => void })
+        .cancelIdleCallback?.(id)
+    }
+    const t = window.setTimeout(() => setIdle(true), 600)
+    return () => window.clearTimeout(t)
+  }, [near])
 
   // Kill-switch: skip Spline entirely and render the lightweight fallback.
   if (!SPLINE_ENABLED) return <FallbackOrb className={className} />
 
-  if (webGL === null) {
-    return (
-      <div className={`w-full h-full flex items-center justify-center ${className ?? ''}`}>
-        <span className="loader" />
-      </div>
-    )
+  // Low-end devices get the CSS orb permanently. A smooth gradient beats a
+  // 3-frames-per-second 3D scene, and it saves them the 4 MB download.
+  if (webGL === false || (webGL !== null && getDeviceTier() === 'low')) {
+    return <FallbackOrb className={className} />
   }
 
-  if (!webGL) return <FallbackOrb className={className} />
-
   return (
-    <SplineBoundary>
-      <Suspense
-        fallback={
-          <div className={`w-full h-full flex items-center justify-center ${className ?? ''}`}>
-            <span className="loader" />
-          </div>
-        }
-      >
-        <Spline scene={scene} className={className} />
-      </Suspense>
-    </SplineBoundary>
+    <div ref={hostRef} className={`w-full h-full ${className ?? ''}`}>
+      {webGL === null || !idle ? (
+        // The orb doubles as the loading state, so there is never a blank gap
+        // or a spinner-then-content flash while the runtime arrives.
+        <FallbackOrb />
+      ) : (
+        <SplineBoundary>
+          <Suspense fallback={<FallbackOrb />}>
+            <Spline scene={scene} className="w-full h-full" />
+          </Suspense>
+        </SplineBoundary>
+      )}
+    </div>
   )
 }

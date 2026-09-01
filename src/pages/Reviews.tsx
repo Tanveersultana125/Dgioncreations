@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Star, Quote } from "lucide-react";
 import Navbar from "@/components/Navbar";
@@ -24,7 +24,6 @@ import { AnimatedTestimonials } from "@/components/ui/animated-testimonials";
 const ease = [0.25, 0.46, 0.45, 0.94] as const;
 
 export default function Reviews() {
-  useEffect(() => { window.scrollTo(0, 0); }, []);
   const { data } = useContent<TestimonialsContent>(TESTIMONIALS_CONTENT_KEY, defaultTestimonialsContent);
   const { toast } = useToast();
 
@@ -154,7 +153,7 @@ export default function Reviews() {
       {/* LEAVE A REVIEW FORM */}
       <section className="relative py-32 border-t border-white/5" style={{ background: "#050505" }}>
         <div className="max-w-7xl mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
             {/* Left: The Form */}
             <motion.div 
               initial={{ opacity: 0, x: -30 }}

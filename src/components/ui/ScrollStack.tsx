@@ -1,5 +1,6 @@
 import React, { useLayoutEffect, useRef, useCallback } from 'react';
 import Lenis from 'lenis';
+import { gsap } from 'gsap';
 import './ScrollStack.css';
 
 export const ScrollStackItem = ({ children, itemClassName = '' }: any) => (
@@ -23,7 +24,8 @@ const ScrollStack = ({
 }: any) => {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const stackCompletedRef = useRef(false);
-  const animationFrameRef = useRef<number | null>(null);
+  // The GSAP ticker callback driving the inner Lenis, so cleanup can remove it.
+  const tickerFnRef = useRef<((time: number) => void) | null>(null);
   const lenisRef = useRef<any>(null);
   const cardsRef = useRef<HTMLElement[]>([]);
   const lastTransformsRef = useRef(new Map());
@@ -86,10 +88,29 @@ const ScrollStack = ({
 
     const endElementTop = endElement ? getElementOffset(endElement) : 0;
 
+    // ---- Phase 1: read ----------------------------------------------------
+    // Every geometry read happens here, before a single style is written.
+    // The previous version read `offsetTop` inside the same loop that wrote
+    // `style.transform`, and did so in a nested loop over all cards — so each
+    // frame forced the browser through N^2 synchronous layouts. Offsets are
+    // unaffected by transforms, so reading them once up front is equivalent.
+    const cardTops = cardsRef.current.map(card => (card ? getElementOffset(card) : 0));
+
+    // The index of the topmost card that has reached the stack is a property
+    // of the scroll position, not of any individual card — compute it once.
+    let topCardIndex = 0;
+    if (blurAmount) {
+      for (let j = 0; j < cardsRef.current.length; j++) {
+        const jTriggerStart = cardTops[j] - stackPositionPx - itemStackDistance * j;
+        if (scrollTop >= jTriggerStart) topCardIndex = j;
+      }
+    }
+
+    // ---- Phase 2: write ---------------------------------------------------
     cardsRef.current.forEach((card, i) => {
       if (!card) return;
 
-      const cardTop = getElementOffset(card);
+      const cardTop = cardTops[i];
       const triggerStart = cardTop - stackPositionPx - itemStackDistance * i;
       const triggerEnd = cardTop - scaleEndPositionPx;
       const pinStart = cardTop - stackPositionPx - itemStackDistance * i;
@@ -101,20 +122,8 @@ const ScrollStack = ({
       const rotation = rotationAmount ? i * rotationAmount * scaleProgress : 0;
 
       let blur = 0;
-      if (blurAmount) {
-        let topCardIndex = 0;
-        for (let j = 0; j < cardsRef.current.length; j++) {
-          const jCardTop = getElementOffset(cardsRef.current[j]);
-          const jTriggerStart = jCardTop - stackPositionPx - itemStackDistance * j;
-          if (scrollTop >= jTriggerStart) {
-            topCardIndex = j;
-          }
-        }
-
-        if (i < topCardIndex) {
-          const depthInStack = topCardIndex - i;
-          blur = Math.max(0, depthInStack * blurAmount);
-        }
+      if (blurAmount && i < topCardIndex) {
+        blur = Math.max(0, (topCardIndex - i) * blurAmount);
       }
 
       let translateY = 0;
@@ -185,28 +194,12 @@ const ScrollStack = ({
 
   const setupLenis = useCallback(() => {
     if (useWindowScroll) {
-      const lenis = new Lenis({
-        duration: 1.2,
-        easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-        smoothWheel: true,
-        touchMultiplier: 2,
-        infinite: false,
-        wheelMultiplier: 1,
-        lerp: 0.1,
-        syncTouch: true,
-        syncTouchLerp: 0.075
-      } as any);
-
-      lenis.on('scroll', handleScroll);
-
-      const raf = (time: number) => {
-        lenis.raf(time);
-        animationFrameRef.current = requestAnimationFrame(raf);
-      };
-      animationFrameRef.current = requestAnimationFrame(raf);
-
-      lenisRef.current = lenis;
-      return lenis;
+      // The app already runs exactly one page-level Lenis (SmoothScrollProvider).
+      // Creating a second one here meant two engines writing window.scrollY on
+      // the same frame, each undoing the other — the scroll would stutter and
+      // fight the user. Just listen to the real scroll instead.
+      window.addEventListener('scroll', handleScroll, { passive: true });
+      return null;
     } else {
       const scroller = scrollerRef.current;
       if (!scroller) return;
@@ -224,18 +217,20 @@ const ScrollStack = ({
         wheelMultiplier: 1,
         touchInertiaMultiplier: 35,
         lerp: 0.1,
-        syncTouch: true,
-        syncTouchLerp: 0.075,
-        touchInertia: 0.6
+        // syncTouch made Lenis take over touch gestures inside this element.
+        // On the phone layouts where this component actually renders, that
+        // replaced the browser's native momentum with a laggy JS imitation and
+        // made the panel feel stuck. Native touch scrolling is better here.
+        syncTouch: false
       } as any);
 
       lenis.on('scroll', handleScroll);
 
-      const raf = (time: number) => {
-        lenis.raf(time);
-        animationFrameRef.current = requestAnimationFrame(raf);
-      };
-      animationFrameRef.current = requestAnimationFrame(raf);
+      // Drive it from GSAP's ticker — the same single rAF loop the rest of the
+      // app runs on — rather than opening another independent frame loop.
+      const tick = (time: number) => lenis.raf(time * 1000);
+      gsap.ticker.add(tick);
+      tickerFnRef.current = tick;
 
       lenisRef.current = lenis;
       return lenis;
@@ -273,11 +268,15 @@ const ScrollStack = ({
     updateCardTransforms();
 
     return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
+      if (tickerFnRef.current) {
+        gsap.ticker.remove(tickerFnRef.current);
+        tickerFnRef.current = null;
       }
+      // Only registered in the window-scroll path, where no Lenis is created.
+      window.removeEventListener('scroll', handleScroll);
       if (lenisRef.current) {
         lenisRef.current.destroy();
+        lenisRef.current = null;
       }
       stackCompletedRef.current = false;
       cardsRef.current = [];
@@ -297,6 +296,7 @@ const ScrollStack = ({
     useWindowScroll,
     onStackComplete,
     setupLenis,
+    handleScroll,
     updateCardTransforms
   ]);
 

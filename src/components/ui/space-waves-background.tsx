@@ -1,9 +1,14 @@
 "use client";
 import React, { useEffect, useRef } from "react";
 import { motion, useScroll, useTransform, useMotionValue, useSpring } from "framer-motion";
+import { getDeviceTier, useInViewport } from "@/lib/perf";
 
 export const SpaceWavesBackground = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const visible = useInViewport(canvasRef, "150px");
+  const visibleRef = useRef(visible);
+  visibleRef.current = visible;
   
   // Parallax tracking
   const { scrollYProgress } = useScroll();
@@ -20,7 +25,7 @@ export const SpaceWavesBackground = () => {
       mouseX.set((e.clientX / innerWidth - 0.5) * 20); // Very subtle parallax
       mouseY.set((e.clientY / innerHeight - 0.5) * 20);
     };
-    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, [mouseX, mouseY]);
 
@@ -36,7 +41,12 @@ export const SpaceWavesBackground = () => {
     let w = canvas.width = window.innerWidth;
     let h = canvas.height = canvas.parentElement?.clientHeight || 800;
 
-    const getParticleCount = () => window.innerWidth < 768 ? 30 : 60;
+    // Connections are O(n^2): 60 particles is 1,770 distance checks per frame.
+    // Halving the count on weak hardware quarters that work.
+    const getParticleCount = () => {
+      if (getDeviceTier() === "low") return 18;
+      return window.innerWidth < 768 ? 24 : 48;
+    };
 
     class Particle {
       x: number;
@@ -100,8 +110,14 @@ export const SpaceWavesBackground = () => {
     };
 
     const animate = () => {
+      // Keep the loop scheduled but do zero work while off-screen or hidden.
+      if (!visibleRef.current) {
+        animationFrameId = requestAnimationFrame(animate);
+        return;
+      }
+
       ctx.clearRect(0, 0, w, h);
-      
+
       for (let i = 0; i < particles.length; i++) {
         particles[i].update();
         particles[i].draw();
@@ -115,9 +131,11 @@ export const SpaceWavesBackground = () => {
 
           const dx = particles[i].x - particles[j].x;
           const dy = particles[i].y - particles[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          
-          if (dist < 140) {
+          const distSq = dx * dx + dy * dy;
+          if (distSq >= 140 * 140) continue;
+          const dist = Math.sqrt(distSq);
+
+          {
             ctx.beginPath();
             const lineOpacity = 0.1 * (1 - dist / 140) * Math.min(fadeI, fadeJ);
             ctx.strokeStyle = `rgba(131, 127, 251, ${lineOpacity})`;
@@ -137,7 +155,7 @@ export const SpaceWavesBackground = () => {
       init();
     };
 
-    window.addEventListener("resize", handleResize);
+    window.addEventListener("resize", handleResize, { passive: true });
     init();
     animate();
 

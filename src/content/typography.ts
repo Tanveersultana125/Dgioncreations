@@ -136,22 +136,76 @@ export const DEFAULT_TEXT_STYLE = defaultTextStyle;
 export const SITE_DISPLAY_FONT: FontFamily | null = "the-seasons";
 export const DISPLAY_FONT_THRESHOLD = 30;
 
+/* ───────────── Fluid type scale ─────────────
+ * Text at or below FLUID_THRESHOLD px is body copy and renders at its exact
+ * size everywhere. Anything larger is display text and scales with the
+ * viewport between MIN_VW and MAX_VW.
+ */
+const FLUID_THRESHOLD = 20;
+/** Viewport width (px) at which display text reaches its smallest size. */
+const MIN_VW = 360;
+/** Viewport width (px) at which display text reaches its authored size. */
+const MAX_VW = 1280;
+/**
+ * Hard ceiling (px) for how large display text may render on a 360px phone.
+ *
+ * This is the important one. The previous floor was `fontSize * 0.45`, which
+ * scaled *with* the desktop size — so a 120px editor heading still rendered at
+ * ~67px on a phone and a 200px one at ~112px. At those sizes a single word is
+ * wider than the screen, so the heading spilled past the viewport and collided
+ * with the label above it. An absolute cap keeps any authored size readable on
+ * a phone no matter how large the admin sets it.
+ */
+const MOBILE_CEILING = 34;
+
+/**
+ * Build a `clamp()` that goes from a phone-safe minimum at MIN_VW up to the
+ * authored size at MAX_VW, interpolating linearly in between.
+ *
+ * Exported so every renderer scales text the same way. `MarkupText` used to
+ * carry its own copy of this formula for per-word size overrides, which meant
+ * a word sized through the editor escaped any later fix made here.
+ */
+export function fluidFontSize(px: number): string {
+  if (px <= FLUID_THRESHOLD) return `${px}px`;
+
+  // Smallest rendered size: proportional for modest headings, hard-capped for
+  // the very large ones, and never larger than the authored size itself. The
+  // 0.55 ratio keeps small and mid headings at the sizes the design already
+  // used on mobile; only the oversized ones hit the ceiling and get reined in.
+  const min = Math.min(px, Math.max(18, Math.min(MOBILE_CEILING, px * 0.55)));
+  if (min >= px) return `${px}px`;
+
+  // preferred = slope * 100vw + intercept, solved through (MIN_VW, min) and
+  // (MAX_VW, px) so the ends land exactly on the intended sizes.
+  const slope = (px - min) / (MAX_VW - MIN_VW);
+  const vw = +(slope * 100).toFixed(4);
+  const intercept = +(min - slope * MIN_VW).toFixed(4);
+
+  const preferred =
+    intercept >= 0 ? `${vw}vw + ${intercept}px` : `${vw}vw - ${Math.abs(intercept)}px`;
+
+  return `clamp(${+min.toFixed(4)}px, ${preferred}, ${px}px)`;
+}
+
 /**
  * Convert a TextStyle (or fallback) into a React.CSSProperties object.
  * Centralising the mapping keeps the renderer and the editor preview 1:1.
  */
+export function resolveFontStack(family: FontFamily, fontSize: number): string {
+  const familyKey =
+    SITE_DISPLAY_FONT && fontSize >= DISPLAY_FONT_THRESHOLD ? SITE_DISPLAY_FONT : family;
+  return FONT_FAMILIES[familyKey]?.stack ?? FONT_FAMILIES.inter.stack;
+}
+
 export function textStyleToCss(style?: TextStyle, fallback: TextStyle = defaultTextStyle): React.CSSProperties {
   const s = style ?? fallback;
   const familyKey =
     SITE_DISPLAY_FONT && s.fontSize >= DISPLAY_FONT_THRESHOLD
       ? SITE_DISPLAY_FONT
       : s.fontFamily;
-      
-  // For mobile responsiveness: text smaller than 20px stays fixed.
-  // Larger text uses clamp() to scale down on small viewports.
-  const fontSize = s.fontSize <= 20 
-    ? `${s.fontSize}px` 
-    : `clamp(${Math.max(16, s.fontSize * 0.45)}px, ${s.fontSize * 0.08}vw + ${s.fontSize * 0.25}px, ${s.fontSize}px)`;
+
+  const fontSize = fluidFontSize(s.fontSize);
 
   return {
     fontSize,

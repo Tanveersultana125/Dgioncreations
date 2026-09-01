@@ -10,11 +10,9 @@ import WhyChooseSection from "@/components/WhyChooseSection";
 import TestimonialsSection from "@/components/TestimonialsSection";
 import Footer from "@/components/Footer";
 import { Tilt3DCard } from "@/components/ui/tilt-3d-card";
-import {
-  IdentityCardBody,
-  RevealCardContainer,
-  } from "@/components/ui/animated-profile-card";
 import GalleryHoverCarousel from "@/components/ui/gallery-hover-carousel";
+import { GlowOrb } from "@/components/ui/GlowOrb";
+import { getLenis } from "@/lib/smooth-scroll";
 import { useContent } from "@/lib/use-content";
 import { 
   ABOUT_CONTENT_KEY, 
@@ -85,17 +83,21 @@ export default function About() {
   const location = useLocation();
 
   useEffect(() => {
-    if (location.hash) {
-      const id = location.hash.replace('#', '');
-      setTimeout(() => {
-        const element = document.getElementById(id);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth' });
-        }
-      }, 100);
-    } else {
-      window.scrollTo(0, 0);
-    }
+    // No hash → <ScrollToTop /> already reset the page through Lenis.
+    if (!location.hash) return;
+
+    const id = location.hash.replace('#', '');
+    const timer = window.setTimeout(() => {
+      const element = document.getElementById(id);
+      if (!element) return;
+      // Route the anchor jump through Lenis when it is running; a raw
+      // scrollIntoView leaves Lenis's target behind and the page springs back.
+      const lenis = getLenis();
+      if (lenis) lenis.scrollTo(element, { offset: -80 });
+      else element.scrollIntoView({ behavior: 'smooth' });
+    }, 120);
+
+    return () => window.clearTimeout(timer);
   }, [location]);
 
   if (loading) {
@@ -145,7 +147,7 @@ export default function About() {
         </div>
 
         {/* Deep Radiant Glows */}
-        <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full opacity-20 blur-[120px] bg-[#837FFB] animate-pulse" style={{ animationDuration: '8s' }} />
+        <GlowOrb color="#837FFB" opacity={0.2} pulse duration={8} className="top-[-10%] left-[-10%] w-[60%] h-[60%]" />
         <div className="absolute bottom-[20%] right-[-5%] w-[40%] h-[40%] rounded-full opacity-15 blur-[100px] bg-[#5B57F5]" />
         <div className="absolute top-[40%] right-[10%] w-32 h-32 bg-[#837FFB]/20 blur-[60px] rounded-full" />
       </div>
@@ -206,12 +208,12 @@ export default function About() {
             </p>
             
             <div className="flex flex-wrap gap-5 justify-start">
-              <Link to="/contact" className="group relative inline-flex items-center gap-3 px-10 py-5 bg-[#837FFB] text-white rounded-full font-bold text-lg hover:scale-105 active:scale-95 transition-all shadow-[0_20px_50px_rgba(131,127,251,0.3)] overflow-hidden">
+              <Link to="/contact" className="group relative inline-flex items-center gap-3 px-6 py-3.5 md:px-10 md:py-5 bg-[#837FFB] text-white rounded-full font-bold text-sm md:text-lg hover:scale-105 active:scale-95 transition-all shadow-[0_20px_50px_rgba(131,127,251,0.3)] overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-r from-[#837FFB] to-[#5B57F5] group-hover:opacity-90 transition-opacity" />
                 <span className="relative z-10">Get in Touch</span>
                 <ChevronRight className="relative z-10 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <Link to="/portfolio" className="px-10 py-5 rounded-full font-bold text-lg text-white bg-white/5 border border-white/10 hover:bg-white/10 hover:border-[#837FFB]/30 transition-all backdrop-blur-sm">
+              <Link to="/portfolio" className="px-6 py-3.5 md:px-10 md:py-5 rounded-full font-bold text-sm md:text-lg text-white bg-white/5 border border-white/10 hover:bg-white/10 hover:border-[#837FFB]/30 transition-all backdrop-blur-sm">
                 See Our Work
               </Link>
             </div>
@@ -304,11 +306,11 @@ export default function About() {
               </h2>
               <p className="mt-8 text-white/40 text-xl md:text-2xl max-w-2xl mx-auto mb-12 font-medium">We're selective — 1 in 10 inquiries become clients. Tell us what you're building.</p>
               <div className="flex flex-wrap gap-5 justify-center">
-                <Link to="/contact" className="group relative inline-flex items-center gap-3 px-12 py-6 bg-white text-black rounded-full font-bold text-xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_40px_rgba(255,255,255,0.2)]">
+                <Link to="/contact" className="group relative inline-flex items-center gap-3 px-7 py-4 md:px-12 md:py-6 bg-white text-black rounded-full font-bold text-base md:text-xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_40px_rgba(255,255,255,0.2)]">
                   <span>Get in Touch</span>
                   <ChevronRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                 </Link>
-                <Link to="/services" className="px-12 py-6 rounded-full font-bold text-xl text-white bg-white/5 border border-white/10 hover:bg-white/10 hover:border-[#837FFB]/30 transition-all">Our Services</Link>
+                <Link to="/services" className="px-7 py-4 md:px-12 md:py-6 rounded-full font-bold text-base md:text-xl text-white bg-white/5 border border-white/10 hover:bg-white/10 hover:border-[#837FFB]/30 transition-all">Our Services</Link>
               </div>
             </div>
           </motion.div>
@@ -365,7 +367,7 @@ function TimelineWithGlider({ milestones, titleStyle, descStyle }: { milestones:
       {milestones.map((m, i) => (
         <motion.div 
           key={i} 
-          className="relative flex items-start gap-10 pb-20 last:pb-0 cursor-pointer group"
+          className="relative flex items-start gap-5 md:gap-10 pb-12 md:pb-20 last:pb-0 cursor-pointer group"
           onClick={() => setActiveIndex(i)}
           initial={false}
           animate={{ opacity: activeIndex === i ? 1 : 0.3 }}

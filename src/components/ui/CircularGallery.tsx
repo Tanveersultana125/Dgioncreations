@@ -1,7 +1,8 @@
 // @ts-nocheck
 import { Camera, Mesh, Plane, Program, Renderer, Texture, Transform } from 'ogl';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getDeviceTier, useInViewport, useLazyMount } from '@/lib/perf';
 
 import './CircularGallery.css';
 
@@ -189,9 +190,11 @@ class Media {
     bend,
     textColor,
     borderRadius = 0,
-    font
+    font,
+    onLoad
   }) {
     this.extra = 0;
+    this.onLoad = onLoad;
     this.geometry = geometry;
     this.gl = gl;
     this.image = image;
@@ -288,9 +291,14 @@ class Media {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.src = this.image;
+    img.decoding = 'async';
+    img.loading = 'eager';
     img.onload = () => {
       texture.image = img;
       this.program.uniforms.uImageSizes.value = [img.naturalWidth, img.naturalHeight];
+      // A texture arriving after the carousel went idle must wake it for one
+      // more frame, otherwise the card stays blank until the user scrolls.
+      this.onLoad?.();
     };
   }
   createMesh() {
@@ -402,6 +410,9 @@ class App {
     this.scroll = { ease: scrollEase, current: 0, target: 0, last: 0 };
     this.onCheckDebounce = debounce(this.onCheck, 200);
     this.onItemClick = onItemClick;
+    this.running = false;
+    this.settledFrames = 0;
+    this.boundUpdate = this.update.bind(this);
     this.createRenderer();
     this.createCamera();
     this.createScene();
@@ -412,10 +423,14 @@ class App {
     this.addEventListeners();
   }
   createRenderer() {
+    // On phones / integrated GPUs, antialiasing and a 2x pixel ratio together
+    // quadruple the fragment cost of a purely decorative carousel.
+    const lowEnd = getDeviceTier() === 'low';
     this.renderer = new Renderer({
       alpha: true,
-      antialias: true,
-      dpr: Math.min(window.devicePixelRatio || 1, 2)
+      antialias: !lowEnd,
+      powerPreference: 'high-performance',
+      dpr: lowEnd ? 1 : Math.min(window.devicePixelRatio || 1, 2)
     });
     this.gl = this.renderer.gl;
     this.gl.clearColor(0, 0, 0, 0);
@@ -430,9 +445,13 @@ class App {
     this.scene = new Transform();
   }
   createGeometry() {
+    // 100x50 segments = 5,000 quads per card, x2 for the duplicated ring. The
+    // bend is a gentle curve; a fraction of that tessellation is visually
+    // identical and a fraction of the vertex work.
+    const lowEnd = getDeviceTier() === 'low';
     this.planeGeometry = new Plane(this.gl, {
-      heightSegments: 50,
-      widthSegments: 100
+      heightSegments: lowEnd ? 4 : 10,
+      widthSegments: lowEnd ? 16 : 32
     });
   }
   createMedias(items, bend = 1, textColor, borderRadius, font) {
@@ -461,7 +480,8 @@ class App {
         bend,
         textColor,
         borderRadius,
-        font
+        font,
+        onLoad: () => { this.settledFrames = 0; }
       });
     });
   }
@@ -563,46 +583,85 @@ class App {
     if (this.medias) {
       this.medias.forEach(media => media.onResize({ screen: this.screen, viewport: this.viewport }));
     }
+    // Layout changed — force the idle-frame skip to redraw at least once.
+    this.settledFrames = 0;
   }
   update() {
+    this.raf = window.requestAnimationFrame(this.boundUpdate);
+
+    // Paused while the gallery is off-screen or the tab is in the background.
+    if (!this.running) return;
+
     this.scroll.current = lerp(this.scroll.current, this.scroll.target, this.scroll.ease);
     const direction = this.scroll.current > this.scroll.last ? 'right' : 'left';
+
+    // Once the carousel has settled on its target there is nothing new to draw.
+    // Skipping the GPU work on a still frame is the difference between the page
+    // costing a constant 8-12ms per frame and costing nothing while idle.
+    const settled = Math.abs(this.scroll.current - this.scroll.target) < 0.001;
+    if (settled && this.settledFrames > 2) {
+      this.scroll.last = this.scroll.current;
+      return;
+    }
+    this.settledFrames = settled ? this.settledFrames + 1 : 0;
+
     if (this.medias) {
       this.medias.forEach(media => media.update(this.scroll, direction));
     }
     this.renderer.render({ scene: this.scene, camera: this.camera });
     this.scroll.last = this.scroll.current;
-    this.raf = window.requestAnimationFrame(this.update.bind(this));
   }
+
+  /** Called by the React wrapper when the section enters / leaves the viewport. */
+  setRunning(running) {
+    if (running && !this.running) this.settledFrames = 0;
+    this.running = running;
+  }
+
   addEventListeners() {
     this.boundOnResize = this.onResize.bind(this);
     this.boundOnWheel = this.onWheel.bind(this);
     this.boundOnTouchDown = this.onTouchDown.bind(this);
     this.boundOnTouchMove = this.onTouchMove.bind(this);
     this.boundOnTouchUp = this.onTouchUp.bind(this);
-    window.addEventListener('resize', this.boundOnResize);
-    window.addEventListener('mousewheel', this.boundOnWheel);
-    window.addEventListener('wheel', this.boundOnWheel, { passive: false });
-    window.addEventListener('mousedown', this.boundOnTouchDown);
-    window.addEventListener('mousemove', this.boundOnTouchMove);
-    window.addEventListener('mouseup', this.boundOnTouchUp);
-    window.addEventListener('touchstart', this.boundOnTouchDown);
-    window.addEventListener('touchmove', this.boundOnTouchMove);
-    window.addEventListener('touchend', this.boundOnTouchUp);
+
+    window.addEventListener('resize', this.boundOnResize, { passive: true });
+
+    // All pointer listeners are scoped to the gallery container, not window.
+    // Previously a non-passive `wheel` handler sat on window for the whole
+    // page — the browser had to wait for JS before it could scroll anywhere,
+    // which is what made the entire site feel stuck.
+    this.container.addEventListener('wheel', this.boundOnWheel, { passive: true });
+    this.container.addEventListener('mousedown', this.boundOnTouchDown, { passive: true });
+    this.container.addEventListener('touchstart', this.boundOnTouchDown, { passive: true });
+
+    // Move/up must stay on window so a drag that leaves the element still ends
+    // correctly, but they no-op immediately unless a drag is actually active.
+    window.addEventListener('mousemove', this.boundOnTouchMove, { passive: true });
+    window.addEventListener('mouseup', this.boundOnTouchUp, { passive: true });
+    window.addEventListener('touchmove', this.boundOnTouchMove, { passive: true });
+    window.addEventListener('touchend', this.boundOnTouchUp, { passive: true });
   }
   destroy() {
+    this.running = false;
     window.cancelAnimationFrame(this.raf);
     window.removeEventListener('resize', this.boundOnResize);
-    window.removeEventListener('mousewheel', this.boundOnWheel);
-    window.removeEventListener('wheel', this.boundOnWheel);
-    window.removeEventListener('mousedown', this.boundOnTouchDown);
+    this.container.removeEventListener('wheel', this.boundOnWheel);
+    this.container.removeEventListener('mousedown', this.boundOnTouchDown);
+    this.container.removeEventListener('touchstart', this.boundOnTouchDown);
     window.removeEventListener('mousemove', this.boundOnTouchMove);
     window.removeEventListener('mouseup', this.boundOnTouchUp);
-    window.removeEventListener('touchstart', this.boundOnTouchDown);
     window.removeEventListener('touchmove', this.boundOnTouchMove);
     window.removeEventListener('touchend', this.boundOnTouchUp);
-    if (this.renderer && this.renderer.gl && this.renderer.gl.canvas.parentNode) {
-      this.renderer.gl.canvas.parentNode.removeChild(this.renderer.gl.canvas);
+
+    if (this.renderer && this.renderer.gl) {
+      const gl = this.renderer.gl;
+      if (gl.canvas.parentNode) gl.canvas.parentNode.removeChild(gl.canvas);
+      // Free the GPU context explicitly. Browsers cap the number of live WebGL
+      // contexts (~16); leaking them on navigation silently kills every canvas
+      // on the page once the cap is hit.
+      const lose = gl.getExtension('WEBGL_lose_context');
+      if (lose) lose.loseContext();
     }
   }
 }
@@ -620,14 +679,53 @@ export default function CircularGallery({
   const containerRef = useRef(null);
   const appRef = useRef(null);
 
+  // `onItemClick` is almost always an inline arrow from the parent, so it is a
+  // brand new function on every render. Reading it through a ref keeps the
+  // click behaviour live without making it a dependency of the setup effect.
+  const clickRef = useRef(onItemClick);
+  clickRef.current = onItemClick;
+
+  // Same story for `items`: parents build it with `.map()` inline, producing a
+  // fresh array identity every render. Rebuilding the whole WebGL app on each
+  // one meant recreating the renderer, geometry and every texture dozens of
+  // times — which is what froze the page. Key off the actual content instead.
+  const itemsKey = useMemo(
+    () => JSON.stringify((items || []).map(i => [i.image, i.text, i.summary, i.url])),
+    [items],
+  );
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+
+  // Only build the gallery once it is close to the viewport, and let it idle
+  // whenever it is scrolled away or the tab is hidden.
+  const shouldMount = useLazyMount(containerRef, '400px');
+  const inView = useInViewport(containerRef, '200px');
+
   useEffect(() => {
-    if (!containerRef.current) return;
-    const app = new App(containerRef.current, { items, bend, textColor, borderRadius, font, scrollSpeed, scrollEase, onItemClick });
+    if (!containerRef.current || !shouldMount) return;
+
+    const app = new App(containerRef.current, {
+      items: itemsRef.current,
+      bend,
+      textColor,
+      borderRadius,
+      font,
+      scrollSpeed,
+      scrollEase,
+      onItemClick: (...args) => clickRef.current?.(...args),
+    });
     appRef.current = app;
+
     return () => {
+      appRef.current = null;
       app.destroy();
     };
-  }, [items, bend, textColor, borderRadius, font, scrollSpeed, scrollEase, onItemClick]);
+    // `itemsKey` intentionally stands in for `items` — see the comment above.
+  }, [shouldMount, itemsKey, bend, textColor, borderRadius, font, scrollSpeed, scrollEase]);
+
+  useEffect(() => {
+    appRef.current?.setRunning(inView);
+  }, [inView]);
 
   const handleNext = (e) => {
     e.stopPropagation();

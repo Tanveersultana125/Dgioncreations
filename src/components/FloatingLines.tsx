@@ -1,4 +1,5 @@
 import { useRef, useEffect, useCallback } from "react";
+import { getDeviceTier, useInViewport } from "@/lib/perf";
 
 interface FloatingLinesProps {
   enabledWaves?: ("top" | "middle" | "bottom")[];
@@ -32,6 +33,15 @@ export default function FloatingLines({
   const timeRef = useRef(0);
   const animRef = useRef<number>(0);
 
+  // Idle while scrolled away or in a background tab.
+  const visible = useInViewport(canvasRef, "150px");
+  const visibleRef = useRef(visible);
+  visibleRef.current = visible;
+
+  // Array props are new identities on every parent render; compare by value so
+  // the canvas is not torn down and rebuilt each time.
+  const wavesKey = enabledWaves.join(",");
+
   const getCount = useCallback(
     (waveIdx: number) =>
       Array.isArray(lineCount) ? lineCount[waveIdx] ?? 8 : lineCount,
@@ -50,15 +60,27 @@ export default function FloatingLines({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    // Cached CSS size. Reading getBoundingClientRect() inside the draw loop
+    // forced a synchronous layout on every frame — the single most expensive
+    // thing this component did.
+    let cssWidth = 0;
+    let cssHeight = 0;
+
+    const lowEnd = getDeviceTier() === "low";
+    const dprCap = lowEnd ? 1 : 2;
+
     const resize = () => {
-      const dpr = window.devicePixelRatio || 1;
+      const dpr = Math.min(window.devicePixelRatio || 1, dprCap);
       const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      ctx.scale(dpr, dpr);
+      cssWidth = rect.width;
+      cssHeight = rect.height;
+      canvas.width = Math.max(1, Math.round(rect.width * dpr));
+      canvas.height = Math.max(1, Math.round(rect.height * dpr));
+      // setTransform, not scale — scale() compounds on every resize.
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
     resize();
-    window.addEventListener("resize", resize);
+    window.addEventListener("resize", resize, { passive: true });
 
     const onMouseMove = (e: MouseEvent) => {
       if (!interactive) return;
@@ -68,16 +90,31 @@ export default function FloatingLines({
         y: (e.clientY - rect.top) / rect.height,
       };
     };
-    if (interactive) canvas.addEventListener("mousemove", onMouseMove);
+    if (interactive) canvas.addEventListener("mousemove", onMouseMove, { passive: true });
 
     const waveConfigs = enabledWaves.map((pos, wi) => {
       const baseY = pos === "top" ? 0.22 : pos === "middle" ? 0.5 : 0.78;
-      return { baseY, count: getCount(wi), dist: getDist(wi), waveIdx: wi };
+      const count = getCount(wi);
+      // Colours depend only on the line index, so resolve the hex maths once at
+      // setup instead of parsing strings for every line on every frame.
+      const colors = Array.from({ length: count }, (_, li) => {
+        const ratio = li / Math.max(1, count - 1);
+        return ratio < 0.5
+          ? lerpColor(gradientStart, gradientMid, ratio * 2)
+          : lerpColor(gradientMid, gradientEnd, (ratio - 0.5) * 2);
+      });
+      return { baseY, count, dist: getDist(wi), waveIdx: wi, colors };
     });
 
+    const segments = lowEnd ? 32 : 60;
+
     const draw = () => {
-      const w = canvas.getBoundingClientRect().width;
-      const h = canvas.getBoundingClientRect().height;
+      animRef.current = requestAnimationFrame(draw);
+      if (!visibleRef.current) return;
+
+      const w = cssWidth;
+      const h = cssHeight;
+      if (w === 0 || h === 0) return;
       ctx.clearRect(0, 0, w, h);
       timeRef.current += 0.008 * animationSpeed;
       const t = timeRef.current;
@@ -90,18 +127,11 @@ export default function FloatingLines({
           const baseY = wave.baseY * h + offset;
 
           // color interpolation
-          const ratio = li / Math.max(1, wave.count - 1);
-          const color =
-            ratio < 0.5
-              ? lerpColor(gradientStart, gradientMid, ratio * 2)
-              : lerpColor(gradientMid, gradientEnd, (ratio - 0.5) * 2);
-
           ctx.beginPath();
-          ctx.strokeStyle = color;
+          ctx.strokeStyle = wave.colors[li];
           ctx.lineWidth = 1.2;
           ctx.globalAlpha = 0.5 + 0.3 * Math.sin(t + li * 0.5);
 
-          const segments = 80;
           for (let s = 0; s <= segments; s++) {
             const sx = (s / segments) * w;
             const progress = s / segments;
@@ -134,8 +164,6 @@ export default function FloatingLines({
           ctx.globalAlpha = 1;
         }
       });
-
-      animRef.current = requestAnimationFrame(draw);
     };
 
     animRef.current = requestAnimationFrame(draw);
@@ -145,7 +173,8 @@ export default function FloatingLines({
       window.removeEventListener("resize", resize);
       if (interactive) canvas.removeEventListener("mousemove", onMouseMove);
     };
-  }, [enabledWaves, getCount, getDist, bendRadius, bendStrength, interactive, parallax, animationSpeed, gradientStart, gradientMid, gradientEnd]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wavesKey, getCount, getDist, bendRadius, bendStrength, interactive, parallax, animationSpeed, gradientStart, gradientMid, gradientEnd]);
 
   return (
     <canvas

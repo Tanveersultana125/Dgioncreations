@@ -172,7 +172,7 @@ function CTA3DCard({ data }: { data: ServicesContent }) {
           <div className="flex flex-wrap gap-5 justify-center">
             <Link
               to={data.ctaPrimaryUrl}
-              className="group relative inline-flex items-center gap-3 px-12 py-6 bg-[#837FFB] text-white rounded-full font-bold text-xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_40px_rgba(131,127,251,0.4)]"
+              className="group relative inline-flex items-center gap-3 px-7 py-4 md:px-12 md:py-6 bg-[#837FFB] text-white rounded-full font-bold text-base md:text-xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_40px_rgba(131,127,251,0.4)]"
               style={{ fontFamily: "var(--site-display)" }}
             >
               <span>{data.ctaPrimaryLabel}</span>
@@ -180,7 +180,7 @@ function CTA3DCard({ data }: { data: ServicesContent }) {
             </Link>
             <Link
               to="/process"
-              className="px-12 py-6 rounded-full font-bold text-xl text-white bg-white/5 border border-white/10 hover:bg-white/10 hover:border-[#837FFB]/30 transition-all"
+              className="px-7 py-4 md:px-12 md:py-6 rounded-full font-bold text-base md:text-xl text-white bg-white/5 border border-white/10 hover:bg-white/10 hover:border-[#837FFB]/30 transition-all"
               style={{ fontFamily: "var(--site-display)" }}
             >
               See Our Process
@@ -193,10 +193,6 @@ function CTA3DCard({ data }: { data: ServicesContent }) {
 }
 
 export default function Services() {
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
-
   const { data, loading } = useContent<ServicesContent>(SERVICES_CONTENT_KEY, defaultServicesContent);
   const testimonialSectionRef = useRef<HTMLElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
@@ -308,7 +304,7 @@ export default function Services() {
             <div className="mt-12 flex flex-wrap gap-5">
               <Link
                 to={data.heroCtaPrimaryUrl}
-                className="group relative inline-flex items-center gap-3 px-10 py-5 bg-[#837FFB] text-white rounded-full font-bold text-lg hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(131,127,251,0.4)]"
+                className="group relative inline-flex items-center gap-3 px-6 py-3.5 md:px-10 md:py-5 bg-[#837FFB] text-white rounded-full font-bold text-sm md:text-lg hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(131,127,251,0.4)]"
                 style={{ fontFamily: "var(--site-display)" }}
               >
                 <span>{data.heroCtaPrimaryLabel}</span>
@@ -316,7 +312,7 @@ export default function Services() {
               </Link>
               <Link
                 to={data.heroCtaSecondaryUrl}
-                className="px-10 py-5 rounded-full font-bold text-lg text-white bg-white/5 border border-white/10 hover:bg-white/10 hover:border-[#837FFB]/30 transition-all"
+                className="px-6 py-3.5 md:px-10 md:py-5 rounded-full font-bold text-sm md:text-lg text-white bg-white/5 border border-white/10 hover:bg-white/10 hover:border-[#837FFB]/30 transition-all"
                 style={{ fontFamily: "var(--site-display)" }}
               >
                 {data.heroCtaSecondaryLabel}
@@ -329,7 +325,7 @@ export default function Services() {
       {/* ── STATS STRIP ───────────────────────────────────────── */}
       <section className="relative py-20 border-y border-white/5 z-10 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-12">
             {data.stats.map((stat, i) => (
               <StatCounter 
                 key={i} 
@@ -499,9 +495,9 @@ export default function Services() {
             className="ind-parent"
           >
             <div className="ind-card !rounded-[40px] !bg-[#0F0D29]/60 !backdrop-blur-2xl !border-white/5">
-              <div className="ind-content-box !p-12">
+              <div className="ind-content-box !p-6 sm:!p-8 md:!p-12">
                 <span className="ind-label !text-[#837FFB] !tracking-[0.4em]">{data.industriesLabel}</span>
-                <span className="ind-title !text-5xl !italic !tracking-tighter">{data.industriesTitle}</span>
+                <span className="ind-title !text-3xl md:!text-5xl !italic !tracking-tighter">{data.industriesTitle}</span>
                 <p className="ind-desc !text-white/40 !text-lg">{data.industriesDescription}</p>
 
                 <div className="ind-pills !gap-3 !mt-10">

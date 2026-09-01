@@ -102,6 +102,16 @@ export default {
           "0%": { backgroundPosition: "200% 0" },
           "100%": { backgroundPosition: "-200% 0" },
         },
+        "fade-in": {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
+        // Ambient glow breathing. Scale + opacity only, so it runs entirely on
+        // the compositor and never triggers layout or paint.
+        "glow-breathe": {
+          "0%, 100%": { opacity: "1", transform: "scale(1)" },
+          "50%": { opacity: "0.55", transform: "scale(1.06)" },
+        },
       },
       transitionTimingFunction: {
         glider: "cubic-bezier(0.37, 1.95, 0.66, 0.56)",

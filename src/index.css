@@ -545,6 +545,29 @@ html.lenis body {
   line-height: 1.45;     /* gap between consecutive marker lines */
 }
 
+/* ─────────────────────────────────────────────────────────────
+   Mobile form-control font floor — keep this LAST in the file.
 
+   iOS Safari zooms the whole page in whenever a focused form control has a
+   font-size below 16px, and it never zooms back out; the visitor is left on a
+   magnified, side-scrolling page. Several forms ship a 14px `text-sm` control
+   (contact, newsletter, the AI chat) and the admin shell forces 0.8rem.
 
+   The selectors below are deliberately specific enough to beat a `.text-sm`
+   utility class (an attribute selector carries class-level specificity), and
+   the block sits at the end of the file so it also wins against the earlier
+   `.admin-shell` overrides on equal specificity.
+   ───────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea:not([hidden]),
+  select:not([hidden]) {
+    font-size: 16px;
+  }
 
+  .admin-shell input,
+  .admin-shell textarea,
+  .admin-shell select {
+    font-size: 16px !important;
+  }
+}

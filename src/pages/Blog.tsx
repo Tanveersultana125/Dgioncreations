@@ -94,7 +94,7 @@ export default function Blog() {
           </motion.div>
 
           {/* Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-10">
             {BLOG_POSTS.slice(1).map((post, i) => (
               <motion.article 
                 key={i}
@@ -130,7 +130,7 @@ export default function Blog() {
           </div>
 
           {/* Newsletter */}
-          <div className="mt-32 p-12 rounded-[40px] bg-gradient-to-br from-[#837FFB]/20 to-transparent border border-white/10 text-center relative overflow-hidden">
+          <div className="mt-16 md:mt-32 p-6 sm:p-8 md:p-12 rounded-[28px] md:rounded-[40px] bg-gradient-to-br from-[#837FFB]/20 to-transparent border border-white/10 text-center relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-[#837FFB]/10 blur-[100px] -mr-32 -mt-32 rounded-full" />
             <h2 className="text-3xl font-bold mb-4 relative z-10">Join the Circle</h2>
             <p className="text-white/50 mb-8 relative z-10 max-w-md mx-auto text-sm">

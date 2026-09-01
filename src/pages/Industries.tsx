@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -40,7 +39,6 @@ const strengths = [
 
 export default function Industries() {
   const { data } = useContent<IndustriesContent>(INDUSTRIES_CONTENT_KEY, defaultIndustriesContent);
-  useEffect(() => { window.scrollTo(0, 0); }, []);
 
   return (
     <div className="min-h-screen bg-background text-white">

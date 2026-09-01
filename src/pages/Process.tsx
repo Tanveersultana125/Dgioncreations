@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -31,7 +30,6 @@ const faqs = [
 ];
 
 export default function Process() {
-  useEffect(() => { window.scrollTo(0, 0); }, []);
 
   return (
     <div 
@@ -163,7 +161,7 @@ export default function Process() {
         {/* 4. Vignette to blend edges smoothly into the page */}
         <div className="absolute inset-0 z-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,#08061A_100%)] pointer-events-none" />
 
-        <div className="relative z-10 max-w-6xl mx-auto px-6 lg:px-10 grid grid-cols-1 md:grid-cols-3 gap-10">
+        <div className="relative z-10 max-w-6xl mx-auto px-6 lg:px-10 grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-10">
           <div className="flex flex-col items-center md:items-start text-center md:text-left gap-4">
             <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0" style={{ background: "rgba(131,127,251,0.1)", border: "1px solid rgba(131,127,251,0.2)" }}>
               <Zap className="w-6 h-6 text-[#837FFB]" />

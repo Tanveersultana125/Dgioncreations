@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -29,7 +29,6 @@ import { StatCounter } from "@/components/ui/StatCounter";
 const ease = [0.25, 0.46, 0.45, 0.94] as const;
 
 export default function Portfolio() {
-  useEffect(() => { window.scrollTo(0, 0); }, []);
   const { data } = useContent<PortfolioContent>(PORTFOLIO_CONTENT_KEY, defaultPortfolioContent);
   const testimonialsGridRef = useRef<HTMLDivElement>(null);
   const isMobile = useMobileDetection();

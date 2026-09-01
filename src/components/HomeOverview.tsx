@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { lazy, Suspense, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useContent } from "@/lib/use-content";
@@ -11,21 +11,41 @@ import {
 } from "@/content/explore";
 import { textStyleToCss } from "@/content/typography";
 import { MarkupText } from "@/lib/markup-text";
-import CircularGallery from "@/components/ui/CircularGallery";
+// The gallery pulls in the OGL WebGL runtime. It lives below the fold, so it
+// has no business being in the first-paint bundle.
+const CircularGallery = lazy(() => import("@/components/ui/CircularGallery"));
 
 export default function HomeOverview() {
   const { data } = useContent<ExploreContent>(EXPLORE_CONTENT_KEY, defaultExploreContent);
-  const items = data.cards || [];
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
 
-  if (items.length === 0) return null;
+  const items = data.cards || [];
 
-  const handleItemClick = (item: any) => {
-    if (item.url) {
-      navigate(item.url);
-    }
-  };
+  // Stable identity — CircularGallery keys its WebGL setup off these props, so
+  // a fresh function/array on every render used to tear the whole scene down
+  // and rebuild it. Both hooks must run before any early return.
+  const handleItemClick = useCallback(
+    (item: any) => {
+      if (item.url) navigate(item.url);
+    },
+    [navigate],
+  );
+
+  const galleryItems = useMemo(
+    () =>
+      items.map((item) => ({
+        image: item.image,
+        text: item.title,
+        summary: item.summary,
+        url: item.url,
+      })),
+    // `data.cards` is a fresh array each render; the contents are what matter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [JSON.stringify(items)],
+  );
+
+  if (items.length === 0) return null;
 
   return (
     <section ref={containerRef} className="relative z-0 bg-[#0A0818] pt-10 pb-4 md:pt-32 md:pb-12 h-auto flex flex-col">
@@ -41,7 +61,7 @@ export default function HomeOverview() {
               or overlaps the heading on narrow phones. Only the admin colour is
               honoured; the large editor fontSize is deliberately ignored here. */}
           <span
-            className="text-[11px] md:text-sm font-black tracking-[0.3em] md:tracking-[0.4em] uppercase block mb-3 md:mb-4 leading-tight"
+            className="text-[11px] md:text-sm font-black tracking-[0.3em] md:tracking-[0.4em] uppercase block mb-3 md:mb-4 leading-[1.5] break-words"
             style={{ color: data.highlightStyle?.color || DEFAULT_HIGHLIGHT_STYLE.color }}
           >
             {data.kicker || "OUR FOCUS"}
@@ -62,24 +82,36 @@ export default function HomeOverview() {
       {/* Single Unified Circular Gallery for all items */}
       <div className="flex-grow relative flex items-center justify-center -mt-8 md:-mt-48 overflow-visible">
         <div className="relative w-full flex items-center justify-center">
-             {/* Floating Glow Blobs */}
-             <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-[150px] opacity-20 animate-pulse bg-[#837FFB]/30" />
-             <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] rounded-full blur-[180px] opacity-10 bg-white/5" />
+             {/* Floating glow blobs.
+                 These used to be `blur-[150px]` + `animate-pulse`, i.e. the GPU
+                 re-blurred a 384px surface every single frame. Painted as radial
+                 gradients they look identical and cost one composite, once. */}
+             <div
+               className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full opacity-20 pointer-events-none"
+               style={{
+                 background:
+                   "radial-gradient(circle, rgba(131,127,251,0.30) 0%, rgba(131,127,251,0.12) 45%, transparent 70%)",
+               }}
+             />
+             <div
+               className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] rounded-full opacity-10 pointer-events-none"
+               style={{
+                 background:
+                   "radial-gradient(circle, rgba(255,255,255,0.10) 0%, transparent 70%)",
+               }}
+             />
 
              <div className="relative w-full h-[520px] md:h-[950px] mt-0">
+                <Suspense fallback={null}>
                 <CircularGallery 
                   bend={1.2} 
                   textColor="#ffffff" 
                   borderRadius={0.06} 
                   scrollEase={0.03}
                   onItemClick={handleItemClick}
-                  items={items.map(item => ({
-                    image: item.image,
-                    text: item.title,
-                    summary: item.summary,
-                    url: item.url
-                  }))}
+                  items={galleryItems}
                 />
+                </Suspense>
              </div>
         </div>
       </div>

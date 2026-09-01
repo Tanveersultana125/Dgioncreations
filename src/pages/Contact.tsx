@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
@@ -27,7 +27,6 @@ const DGION_PURPLE = "#837FFB";
 
 export default function Contact() {
   const { data } = useContent<ContactContent>(CONTACT_CONTENT_KEY, defaultContactContent);
-  useEffect(() => { window.scrollTo(0, 0); }, []);
 
   const titleLines = data.heroTitle.split("\n");
 

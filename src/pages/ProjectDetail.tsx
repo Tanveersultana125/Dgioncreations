@@ -58,10 +58,6 @@ export default function ProjectDetail() {
   // Find project by ID or slug
   const project = portfolioData.projects.find((p) => p.id === id || p.slug === id);
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [id]);
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#08061A] text-white">
@@ -124,7 +120,7 @@ export default function ProjectDetail() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, ease }}
           >
-            <div className="flex flex-col lg:flex-row gap-12 lg:items-end mb-16">
+            <div className="flex flex-col lg:flex-row gap-6 lg:gap-12 lg:items-end mb-10 md:mb-16">
               <div className="flex-1">
                 <h1 
                   className="tracking-tighter leading-[0.9] mb-8"
@@ -139,7 +135,7 @@ export default function ProjectDetail() {
                   {project.tagline}
                 </p>
               </div>
-              <div className="lg:w-1/3 flex flex-wrap gap-10 border-l border-white/10 pl-10">
+              <div className="lg:w-1/3 flex flex-wrap gap-6 md:gap-10 border-l border-white/10 pl-5 md:pl-10">
                 <div className="flex flex-col gap-1">
                   <span className="text-[10px] font-bold uppercase tracking-widest text-white/30">Client</span>
                   <span className="text-white font-bold">{project.client}</span>
@@ -162,7 +158,7 @@ export default function ProjectDetail() {
       {/* Stats Section */}
       <section className="py-12 border-y border-white/5 relative z-10">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-12">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-12">
             {project.stats.map((stat, i) => (
               <StatCounter key={i} value={stat.value} label={stat.label} />
             ))}
@@ -173,7 +169,7 @@ export default function ProjectDetail() {
       {/* Main Content */}
       <section className="py-32 relative z-10">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-24">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-24">
             {/* Left: Overview */}
             <div className="lg:col-span-7">
               <motion.div
@@ -285,7 +281,7 @@ export default function ProjectDetail() {
                   document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" });
                 }, 50);
               }}
-              className="group relative inline-flex items-center gap-3 px-12 py-6 bg-white text-black rounded-full font-bold text-xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_40px_rgba(255,255,255,0.2)]"
+              className="group relative inline-flex items-center gap-3 px-7 py-4 md:px-12 md:py-6 bg-white text-black rounded-full font-bold text-base md:text-xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_40px_rgba(255,255,255,0.2)]"
             >
               <span>Build Something Great</span>
               <ChevronRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
