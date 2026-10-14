@@ -111,7 +111,7 @@ export default function Navbar() {
           <motion.div
             initial={{ opacity: 0, y: -20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            className="absolute top-full left-0 right-0 mt-3 sm:mt-4 bg-[#22175A]/98 backdrop-blur-3xl rounded-[28px] sm:rounded-[40px] border border-[#837FFB]/20 p-5 sm:p-7 md:p-10 flex flex-col gap-2 sm:gap-3 shadow-2xl z-[100]"
+            className="absolute top-full left-0 right-0 mt-3 sm:mt-4 bg-[#1A1145] backdrop-blur-3xl rounded-[28px] sm:rounded-[40px] border border-[#837FFB]/30 p-5 sm:p-7 md:p-10 flex flex-col gap-2 sm:gap-3 shadow-2xl z-[100]"
           >
             {(data.links.some(l => l.href === "/reviews") 
               ? data.links 
@@ -130,20 +130,20 @@ export default function Navbar() {
                   <Link
                     to={l.href}
                     onClick={() => setOpen(false)}
-                    className="transition-colors py-3 sm:py-4 font-black text-base sm:text-lg md:text-xl flex justify-between items-center min-h-[44px]"
-                    style={textStyleToCss(data.linksStyle)}
+                    className="text-white hover:text-[#837FFB] transition-colors py-3 sm:py-4 font-black text-base sm:text-lg md:text-xl flex justify-between items-center min-h-[44px]"
+                    style={{ ...textStyleToCss(data.linksStyle), color: "#ffffff" }}
                   >
                     {l.label}
-                    <span className="opacity-30">→</span>
+                    <span className="opacity-60">→</span>
                   </Link>
                   {hasSubItems && (
-                    <div className="flex flex-col gap-2 pl-4 mb-2 border-l border-white/10">
+                    <div className="flex flex-col gap-2 pl-4 mb-2 border-l border-white/20">
                       {subItems.map((sub) => (
                         <Link
                           key={sub.label}
                           to={sub.href}
                           onClick={() => setOpen(false)}
-                          className="py-2 text-sm font-bold text-white/50 hover:text-[#837FFB] transition-colors"
+                          className="py-2 text-sm font-bold text-white/90 hover:text-[#837FFB] transition-colors"
                         >
                           {sub.label}
                         </Link>
