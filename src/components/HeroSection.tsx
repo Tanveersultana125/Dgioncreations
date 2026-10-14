@@ -36,8 +36,8 @@ export default function HeroSection() {
     return (
       <section className="relative w-full min-h-screen overflow-hidden bg-background">
         <div className="absolute inset-0 pointer-events-none z-0">
-          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full opacity-20 blur-[120px] bg-[#837FFB]" />
-          <div className="absolute bottom-[10%] right-[-5%] w-[40%] h-[40%] rounded-full opacity-10 blur-[100px] bg-[#5B57F5]" />
+          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full opacity-20" style={{ background: "radial-gradient(circle, #837FFB 0%, transparent 70%)" }} />
+          <div className="absolute bottom-[10%] right-[-5%] w-[40%] h-[40%] rounded-full opacity-10" style={{ background: "radial-gradient(circle, #5B57F5 0%, transparent 70%)" }} />
         </div>
       </section>
     );
@@ -48,8 +48,8 @@ export default function HeroSection() {
       {/* Background Texture & Glows */}
       <div className="absolute inset-0 pointer-events-none z-0">
         <div className="absolute inset-0 opacity-[0.03] contrast-150 brightness-100" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3仿真%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} />
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full opacity-20 blur-[120px] bg-[#837FFB]" />
-        <div className="absolute bottom-[10%] right-[-5%] w-[40%] h-[40%] rounded-full opacity-10 blur-[100px] bg-[#5B57F5]" />
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full opacity-20" style={{ background: "radial-gradient(circle, #837FFB 0%, transparent 70%)" }} />
+        <div className="absolute bottom-[10%] right-[-5%] w-[40%] h-[40%] rounded-full opacity-10" style={{ background: "radial-gradient(circle, #5B57F5 0%, transparent 70%)" }} />
       </div>
 
       <div className="relative z-10 flex flex-col lg:flex-row w-full min-h-screen">
@@ -143,9 +143,6 @@ export default function HeroSection() {
 
         {/* ── Right: Spline 3D robot ──────────────────────────── */}
         <div className="flex-1 relative min-h-[320px] sm:min-h-[400px] md:min-h-[480px] lg:min-h-0">
-          <div className="hidden lg:block absolute left-0 top-0 bottom-0 w-px
-                          bg-gradient-to-b from-transparent via-[#837FFB]/25 to-transparent z-20" />
-
           <div className="absolute inset-0">
             {content.heroImageUrl ? (
               <img
@@ -162,7 +159,10 @@ export default function HeroSection() {
             )}
           </div>
 
-          <div className="absolute top-0 bottom-0 left-0 w-16 bg-gradient-to-r from-[#0A0818] to-transparent pointer-events-none z-10" />
+          {/* Fade the robot's backdrop into the page so there is no seam against
+              the text column. A colour overlay, not a mask: masking the WebGL
+              canvas causes compositing artifacts in Chrome. */}
+          <div className="absolute top-0 bottom-0 left-0 w-16 lg:w-40 bg-gradient-to-r from-background via-background/60 to-transparent pointer-events-none z-10" />
           <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-[#0A0818] to-transparent pointer-events-none z-10" />
         </div>
       </div>
